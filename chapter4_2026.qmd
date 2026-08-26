@@ -1,0 +1,482 @@
+---
+title: "第4章 文字列・日付・複数ファイルを扱う"
+subtitle: "景気コメントと都道府県データの実践"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-copy: true
+    code-overflow: wrap
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: ch4-setup
+#| include: false
+options(scipen = 999)
+Sys.setenv(TZ = "Asia/Tokyo")
+library(tidyverse)
+library(readxl)
+library(lubridate)
+```
+
+## この章の到達目標
+
+1. 文字列の空白、改行、表記揺れを整える。
+2. 正規表現を使って、条件に合う文章や名称を抽出する。
+3. 年・月から日付型を作り、時系列を安全に並べる。
+4. `map()`を使って複数列・複数シートへ同じ処理を適用する。
+5. 文字列判定を分析上の定義と混同せず、限界を説明する。
+
+## 数値以外のデータも分析対象である
+
+景気判断、企業の説明資料、自由記述、ニュース、求人、特許などは、数値だけでは捉えにくい情報を含みます。ただし、文章から抽出した語の件数は、そのまま経済効果の大きさではありません。
+
+この章では、`analysis_data.xlsx` の `watcher_text` と、`c_pref_gdp.xlsx` を使います。
+
+```{r}
+analysis_path <- file.path("data_raw", "analysis_data.xlsx")
+watcher_raw <- read_excel(
+  analysis_path,
+  sheet = "watcher_text"
+)
+
+glimpse(watcher_raw)
+```
+
+## 文字列を長い形へ変換する
+
+コメントが `com1`～`com8` に横並びなので、1行1コメントへ変換します。
+
+```{r}
+watcher_long <- watcher_raw |>
+  pivot_longer(
+    cols = starts_with("com"),
+    names_to = "comment_id",
+    values_to = "comment"
+  ) |>
+  filter(!is.na(comment))
+
+watcher_long |>
+  select(area, March, April, comment_id, comment) |>
+  slice_head(n = 10)
+```
+
+1行1コメントにすると、語の検出、件数集計、カテゴリ付与が容易になります。
+
+## 文字列を清掃する
+
+文章中には改行や連続空白があります。
+
+```{r}
+watcher_clean <- watcher_long |>
+  mutate(
+    comment_original = comment,
+    comment = str_replace_all(comment, "[\\r\\n]+", " "),
+    comment = str_squish(comment),
+    comment = str_remove(comment, "^[・●○\\-]+\\s*")
+  )
+
+watcher_clean |>
+  select(comment_original, comment) |>
+  slice_head(n = 5)
+```
+
+元の文章を残したまま、分析用列を別に作ります。清掃で意味を変えていないか、前後を比較します。
+
+## 正規表現の基礎
+
+| 記号 | 意味 | 例 |
+|---|---|---|
+| `|` | または | `値上げ|価格上昇` |
+| `.` | 任意の1文字 | `景.感` |
+| `^` | 文字列の先頭 | `^北海道` |
+| `$` | 文字列の末尾 | `県$` |
+| `[]` | いずれか1文字 | `[増減]加` |
+| `()` | グループ | `(人手|人材)不足` |
+| `\\s` | 空白 | `\\s+` |
+| `\\d` | 数字 | `\\d{4}` |
+
+正規表現で特別な意味を持つ記号を文字そのものとして探すときは、エスケープが必要です。
+
+```{r}
+str_detect("2026.04", "\\.")
+```
+
+## キーワードを検出する
+
+### 単一のテーマ
+
+```{r}
+tariff_comments <- watcher_clean |>
+  filter(str_detect(comment, "関税|通商|輸出")) |>
+  select(area, comment_id, comment)
+
+tariff_comments |>
+  slice_head(n = 20)
+```
+
+### 複数テーマを列にする
+
+```{r}
+watcher_tagged <- watcher_clean |>
+  mutate(
+    tariff = str_detect(comment, "関税|通商|輸出"),
+    price = str_detect(comment, "物価|価格|値上げ|高騰|原材料"),
+    consumption = str_detect(comment, "買い控え|節約|生活防衛|買上点数"),
+    labor = str_detect(comment, "人手不足|人材不足|採用|求人|時給"),
+    inbound = str_detect(comment, "インバウンド|訪日|外国人客")
+  )
+
+watcher_tagged |>
+  summarise(
+    across(
+      c(tariff, price, consumption, labor, inbound),
+      ~ sum(.x, na.rm = TRUE)
+    )
+  )
+```
+
+キーワード設計により結果が変わるため、語の一覧と採用理由を残します。
+
+### 地域別に数える
+
+```{r}
+keyword_by_area <- watcher_tagged |>
+  summarise(
+    comments = n(),
+    tariff_n = sum(tariff),
+    price_n = sum(price),
+    consumption_n = sum(consumption),
+    labor_n = sum(labor),
+    inbound_n = sum(inbound),
+    .by = area
+  ) |>
+  arrange(desc(price_n))
+
+keyword_by_area
+```
+
+各地域のコメント数が同じとは限りません。件数だけでなく比率も確認します。
+
+```{r}
+keyword_by_area <- keyword_by_area |>
+  mutate(
+    price_share = price_n / comments,
+    labor_share = labor_n / comments
+  )
+```
+
+## `across()`で同じ処理を繰り返す
+
+コメント列が横持ちのままなら、複数列に同じ判定を適用できます。
+
+```{r}
+watcher_raw |>
+  mutate(
+    across(
+      .cols = starts_with("com"),
+      .fns = ~ str_detect(.x, "関税|通商"),
+      .names = "{.col}_tariff"
+    )
+  ) |>
+  select(area, ends_with("_tariff")) |>
+  slice_head(n = 5)
+```
+
+ただし、後の集計や可視化を考えると、通常は1行1コメントの縦持ちが扱いやすいです。
+
+## 因子で表示順を管理する
+
+文字列のまま並べると、五十音順やアルファベット順になります。経済圏や地理順など、意味のある順序を明示します。
+
+```{r}
+area_order <- c(
+  "北海道", "東北", "北関東", "南関東", "甲信越", "東海",
+  "北陸", "近畿", "中国", "四国", "九州", "沖縄"
+)
+
+watcher_area <- watcher_raw |>
+  mutate(
+    area = factor(area, levels = area_order),
+    change = April - March
+  ) |>
+  arrange(area)
+
+watcher_area |>
+  select(area, March, April, change)
+```
+
+東・中・西のような大分類を作る場合は、分類ルールをコードとして残します。
+
+```{r}
+watcher_area <- watcher_area |>
+  mutate(
+    broad_area = case_when(
+      area %in% c("北海道", "東北", "北関東", "南関東") ~ "東日本",
+      area %in% c("甲信越", "東海", "北陸") ~ "中日本",
+      area %in% c("近畿", "中国", "四国", "九州", "沖縄") ~ "西日本",
+      TRUE ~ NA_character_
+    ),
+    broad_area = factor(
+      broad_area,
+      levels = c("東日本", "中日本", "西日本")
+    )
+  )
+```
+
+これは講義用の分類例です。公的な地域区分と一致するとは限らないため、分析では定義を明記します。
+
+## 日付型を作る
+
+国際収支統計の年と月から、月初日の日付を作ります。
+
+```{r}
+bop <- read_csv(
+  file.path("data_raw", "a_bop.csv"),
+  locale = locale(encoding = "UTF-8"),
+  trim_ws = TRUE,
+  na = c("", "NA"),
+  show_col_types = FALSE
+) |>
+  fill(year) |>
+  mutate(
+    year = as.integer(year),
+    month_no = as.integer(month),
+    date = make_date(year, month_no, 1),
+    quarter = lubridate::quarter(date),
+    year_quarter = paste0(
+      lubridate::year(date),
+      "Q",
+      lubridate::quarter(date)
+    )
+  )
+
+bop |>
+  select(year, month, date, quarter, year_quarter) |>
+  slice_head(n = 15)
+```
+
+文字列の年月は、辞書順と時系列順が一致しない場合があります。分析前に `Date` へ変換します。
+
+### 四半期へ集計する
+
+```{r}
+bop_quarter <- bop |>
+  mutate(trade_balance = exports - imports) |>
+  summarise(
+    exports = sum(exports, na.rm = TRUE),
+    imports = sum(imports, na.rm = TRUE),
+    trade_balance = sum(trade_balance, na.rm = TRUE),
+    months = n(),
+    .by = c(year, quarter)
+  ) |>
+  mutate(complete_quarter = months == 3)
+
+bop_quarter |>
+  slice_tail(n = 12)
+```
+
+四半期末まで3か月そろっていない観測を、完成した四半期と同じように扱ってはいけません。
+
+## `map()`で複数シートを読む
+
+都道府県GDPファイルには3シートがあります。
+
+```{r}
+pref_path <- file.path("data_raw", "c_pref_gdp.xlsx")
+pref_sheets <- excel_sheets(pref_path)
+pref_sheets
+```
+
+```{r}
+pref_sheet_list <- pref_sheets |>
+  set_names() |>
+  map(~ read_excel(pref_path, sheet = .x))
+
+map(pref_sheet_list, dim)
+```
+
+`map()`の結果はリストです。各シートの構造が異なるため、無理にそのまま縦結合せず、構造を確認します。
+
+```{r}
+map(pref_sheet_list, names)
+```
+
+### 横持ち2シートを共通の関数で縦長にする
+
+```{r}
+wide_pref_to_long <- function(data, value_name) {
+  data |>
+    select(-matches("^\\.\\.\\.")) |>
+    pivot_longer(
+      cols = matches("^\\d{4}$"),
+      names_to = "year",
+      names_transform = list(year = as.integer),
+      values_to = value_name
+    ) |>
+    mutate(code = str_pad(as.character(code), 2, pad = "0"))
+}
+```
+
+```{r}
+pref_gdp_long <- wide_pref_to_long(
+  pref_sheet_list[["gdp"]],
+  "gdp"
+)
+
+pref_comp_long <- wide_pref_to_long(
+  pref_sheet_list[["compensation"]],
+  "compensation"
+)
+
+pref_gdp_long |>
+  slice_head(n = 10)
+```
+
+### 異なる構造のシートは別に整える
+
+```{r}
+pref_agri <- pref_sheet_list[["agri_forestry"]] |>
+  mutate(
+    code = str_pad(as.character(code), 2, pad = "0"),
+    year = as.integer(year),
+    agriculture_forestry = agriculture + forestry
+  )
+
+pref_agri |>
+  slice_head(n = 10)
+```
+
+同じExcel内でも、シートの形が同じとは限りません。共通化は、観測単位と列構造が一致する範囲に限定します。
+
+## 文字列条件を都道府県分析へ使う
+
+都道府県名に「山」を含むかを判定します。
+
+```{r}
+pref_name_rule <- pref_agri |>
+  mutate(contains_yama = str_detect(pref, "山")) |>
+  select(pref, contains_yama)
+
+pref_name_rule
+```
+
+::: {.callout-warning}
+## これは地形分類ではない
+
+`str_detect(pref, "山")`が測るのは「名称に文字として山を含むか」です。山地の多さ、農林業の重要性、中山間地域かどうかを直接測っていません。演習では、文字列処理の練習としてこの規則を使い、結論では限界を明記します。
+:::
+
+GDPと結合して、農林業シェアを作ります。
+
+```{r}
+pref_gdp_2021 <- pref_gdp_long |>
+  filter(year == 2021) |>
+  select(code, pref, year, gdp)
+
+pref_agri_share <- pref_agri |>
+  select(code, pref, year, agriculture_forestry) |>
+  left_join(
+    pref_gdp_2021,
+    by = join_by(code, pref, year),
+    relationship = "one-to-one"
+  ) |>
+  mutate(
+    contains_yama = str_detect(pref, "山"),
+    share = agriculture_forestry / gdp
+  )
+
+pref_agri_share |>
+  summarise(
+    prefectures = n(),
+    mean_share = mean(share, na.rm = TRUE),
+    median_share = median(share, na.rm = TRUE),
+    .by = contains_yama
+  )
+```
+
+## 複数ファイルを一括で読む
+
+同じ列構造のCSVが複数ある場合に限り、一括読込が有効です。
+
+```{r}
+#| eval: false
+csv_paths <- list.files(
+  "data_raw/monthly_files",
+  pattern = "\\.csv$",
+  full.names = TRUE
+)
+
+monthly_data <- csv_paths |>
+  set_names(basename) |>
+  map(
+    ~ read_csv(
+      .x,
+      locale = locale(encoding = "UTF-8"),
+      show_col_types = FALSE
+    )
+  )
+
+map(monthly_data, names)
+```
+
+列名や型を確認してから、縦結合します。
+
+```{r}
+#| eval: false
+all_months <- monthly_data |>
+  list_rbind(names_to = "source_file")
+```
+
+ファイルごとに列がずれていると、意図しない欠損列が増えます。`map(names)`、`map(dim)`、`map(colSums(is.na(.x)))`などで事前確認します。
+
+## 章末演習
+
+### 演習1：景気コメント
+
+1. `com1`～`com8`を1行1コメントへ変換する。
+2. 改行と連続空白を除く。
+3. 「価格」「関税」「人手不足」に関する辞書を自分で作る。
+4. 地域別の言及件数と比率を求める。
+5. 辞書方式の長所と限界を説明する。
+
+### 演習2：日付と四半期
+
+国際収支統計を月次日付へ変換し、輸出、輸入、貿易収支を四半期合計へ集計してください。未完成四半期を識別する列も作ります。
+
+### 演習3：都道府県シート
+
+`c_pref_gdp.xlsx`の全シートをリストとして読み、各シートについて行数、列数、列名、欠損数を一覧化してください。
+
+```{r}
+#| eval: false
+pref_sheets |>
+  set_names() |>
+  map(~ read_excel(pref_path, sheet = .x)) |>
+  imap_dfr(
+    ~ tibble(
+      sheet = .y,
+      rows = nrow(.x),
+      columns = ncol(.x),
+      missing_cells = sum(is.na(.x))
+    )
+  )
+```
+
+### 演習4：名称による分類
+
+「山」を含む県と含まない県で農業・林業シェアを比較し、文字列規則だけでは政策的結論を出せない理由を書いてください。
+
+## 章末チェック
+
+- [ ] 元の文章列を残して清掃列を作っている。
+- [ ] 正規表現の語彙と採用理由を記録している。
+- [ ] 件数と比率を区別している。
+- [ ] 年月を日付型へ変換し、未完成期間を識別している。
+- [ ] 複数シートの構造を確認してから共通処理を適用している。
+- [ ] 文字列判定と実体概念を混同していない。

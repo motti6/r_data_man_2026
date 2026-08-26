@@ -1,0 +1,560 @@
+---
+title: "第3章 データを整える・集計する・結合する"
+subtitle: "dplyrとtidyrを実データで学ぶ"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-copy: true
+    code-overflow: wrap
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: ch3-setup
+#| include: false
+options(scipen = 999)
+Sys.setenv(TZ = "Asia/Tokyo")
+library(tidyverse)
+library(readxl)
+library(lubridate)
+
+dir.create("data_clean", showWarnings = FALSE)
+dir.create("output_data", showWarnings = FALSE)
+```
+
+## この章の到達目標
+
+1. `select()`、`filter()`、`arrange()`、`slice_*()`で必要な観測を取り出す。
+2. `mutate()`で定義に沿った変数を作る。
+3. `summarise()`とグループ化で集計表を作る。
+4. `pivot_longer()`と`pivot_wider()`で分析用・掲載用の形を変換する。
+5. 結合キーの一意性と行数を確認して、安全にデータを結合する。
+
+## データ操作の基本原則
+
+一つの処理で多くを行いすぎず、各段階で次を確認します。
+
+```text
+読み込み → 構造確認 → 必要列の選択 → 欠損・重複確認
+       → 変数作成 → 集計・変形 → 結合 → 検証 → 保存
+```
+
+パイプ `|>` は「左の結果を右の関数へ渡す」と読みます。
+
+```{r}
+tx <- read_excel(
+  file.path("data_raw", "analysis_data.xlsx"),
+  sheet = "tx_data"
+)
+
+tx |>
+  select(title, monthly_rent, layout, size_sqm) |>
+  slice_head(n = 5)
+```
+
+## 行と列を選ぶ
+
+### `select()`：列を選ぶ
+
+```{r}
+tx_core <- tx |>
+  select(
+    title,
+    monthly_rent,
+    layout,
+    size_sqm,
+    building_age,
+    minutes_to_station,
+    tx_indicator
+  )
+
+tx_core
+```
+
+列を除く場合は `-` を使います。
+
+```{r}
+tx |>
+  select(-floor) |>
+  slice_head(n = 3)
+```
+
+列名の規則で選ぶこともできます。
+
+```{r}
+tx |>
+  select(ends_with("indicator"), where(is.numeric)) |>
+  glimpse()
+```
+
+### `filter()`：条件に合う行を選ぶ
+
+```{r}
+tx |>
+  filter(
+    size_sqm >= 50,
+    minutes_to_station <= 10,
+    layout %in% c("1LDK", "2LDK")
+  ) |>
+  select(title, monthly_rent, layout, size_sqm, minutes_to_station) |>
+  slice_head(n = 10)
+```
+
+`filter(a, b)` は `a & b` と同じく、両方の条件を満たす行を残します。「または」は `|` を使います。
+
+```{r}
+tx |>
+  filter(layout == "1LDK" | layout == "2LDK") |>
+  count(layout)
+```
+
+### `arrange()`と`slice_*()`
+
+```{r}
+tx |>
+  arrange(desc(monthly_rent)) |>
+  select(title, monthly_rent, size_sqm, layout) |>
+  slice_head(n = 10)
+```
+
+最大値・最小値には `slice_max()`、`slice_min()`が便利です。
+
+```{r}
+tx |>
+  slice_max(monthly_rent, n = 5, with_ties = FALSE) |>
+  select(title, monthly_rent, size_sqm, layout)
+```
+
+## 欠損と重複を確認する
+
+```{r}
+tx |>
+  summarise(
+    across(
+      everything(),
+      list(
+        missing_n = ~ sum(is.na(.x)),
+        missing_rate = ~ mean(is.na(.x))
+      )
+    )
+  )
+```
+
+同一物件名が複数行あるか確認します。
+
+```{r}
+tx |>
+  count(title, sort = TRUE) |>
+  filter(n > 1) |>
+  slice_head(n = 20)
+```
+
+重複があっても、募集時点、部屋番号、階数、条件が異なる可能性があります。`distinct(title, .keep_all = TRUE)`で機械的に消す前に、1行の観測単位を確認します。
+
+## 国際収支統計を整える
+
+追加演習で使う実データを読みます。`year`は各年の最初の行以外が欠損しているため、直前の値で埋めます。
+
+```{r}
+bop_raw <- read_csv(
+  file.path("data_raw", "a_bop.csv"),
+  locale = locale(encoding = "UTF-8"),
+  trim_ws = TRUE,
+  na = c("", "NA"),
+  show_col_types = FALSE
+)
+
+bop_raw |>
+  slice_head(n = 15)
+```
+
+```{r}
+bop <- bop_raw |>
+  fill(year) |>
+  mutate(
+    year = as.integer(year),
+    month_no = as.integer(month),
+    date = make_date(year, month_no, 1)
+  )
+
+bop |>
+  select(year, month, date, everything()) |>
+  slice_head(n = 15)
+```
+
+### `mutate()`：定義から変数を作る
+
+配布ファイルでは貿易収支が空欄です。定義に従い、輸出から輸入を引いて作ります。
+
+```{r}
+bop <- bop |>
+  mutate(
+    trade_balance = exports - imports,
+    goods_services_balance_calc = trade_balance + services_balance,
+    current_account_calc =
+      goods_services_balance_calc + primary_income + secondary_income
+  )
+```
+
+公表値と再計算値の差を確認します。
+
+```{r}
+bop_check <- bop |>
+  transmute(
+    date,
+    goods_services_diff = goods_services_balance - goods_services_balance_calc,
+    current_account_diff = current_account - current_account_calc
+  )
+
+bop_check |>
+  summarise(
+    across(
+      c(goods_services_diff, current_account_diff),
+      list(
+        min = ~ min(.x, na.rm = TRUE),
+        max = ~ max(.x, na.rm = TRUE),
+        nonzero = ~ sum(.x != 0, na.rm = TRUE)
+      )
+    )
+  )
+```
+
+差があれば、丸め、符号、構成項目、改定時点、欠損を確認します。「定義どおり計算したから必ず完全一致する」とは限りません。
+
+### 任意の月で比較する
+
+```{r}
+target_month <- 1
+
+bop |>
+  filter(month_no == target_month) |>
+  slice_min(trade_balance, n = 5, with_ties = FALSE) |>
+  select(year, month, exports, imports, trade_balance)
+```
+
+`target_month`だけを変更すれば、同じコードで別の月を調べられます。
+
+## 集計する
+
+### `count()`
+
+```{r}
+tx |>
+  count(layout, sort = TRUE) |>
+  slice_head(n = 10)
+```
+
+### `summarise()`と`.by`
+
+```{r}
+tx |>
+  summarise(
+    n = n(),
+    mean_rent = mean(monthly_rent, na.rm = TRUE),
+    median_rent = median(monthly_rent, na.rm = TRUE),
+    mean_size = mean(size_sqm, na.rm = TRUE),
+    .by = layout
+  ) |>
+  arrange(desc(n)) |>
+  slice_head(n = 10)
+```
+
+`.by`は、その処理だけにグループ化を適用します。複数の処理にわたりグループ化を維持したい場合は `group_by()`を使います。
+
+```{r}
+bop_year <- bop |>
+  summarise(
+    exports = sum(exports, na.rm = TRUE),
+    imports = sum(imports, na.rm = TRUE),
+    trade_balance = sum(trade_balance, na.rm = TRUE),
+    observed_months = sum(!is.na(trade_balance)),
+    .by = year
+  )
+
+bop_year |>
+  slice_tail(n = 10)
+```
+
+年の途中までしかない場合、単純な年間合計を前年と比較できません。`observed_months`を必ず確認します。
+
+## 縦持ちと横持ちを変換する
+
+### 掲載用の横持ち表
+
+輸出・輸入の推移を年×月の表にします。
+
+```{r}
+trade_report <- bop |>
+  select(year, month_no, exports, imports) |>
+  pivot_longer(
+    cols = c(exports, imports),
+    names_to = "series",
+    values_to = "value"
+  ) |>
+  mutate(month_key = sprintf("m%02d", month_no)) |>
+  select(-month_no) |>
+  pivot_wider(
+    names_from = c(series, month_key),
+    values_from = value,
+    names_glue = "{series}_{month_key}"
+  )
+
+trade_report |>
+  slice_tail(n = 5)
+```
+
+### 分析用の縦持ち表
+
+WEOは年が列に並ぶ横持ちです。回帰、時系列、グラフでは、国×系列×年を1行にする方が扱いやすくなります。
+
+```{r}
+weo_raw <- read_excel(
+  file.path("data_raw", "b_weo.xlsx"),
+  sheet = "weo",
+  col_types = "text",
+  na = c("", "n/a", "--", "...")
+)
+
+year_columns <- names(weo_raw) |>
+  str_subset("^(19|20)\\d{2}$")
+
+weo_long <- weo_raw |>
+  pivot_longer(
+    cols = all_of(year_columns),
+    names_to = "year",
+    values_to = "value_raw"
+  ) |>
+  mutate(
+    year = parse_integer(year),
+    value = parse_number(value_raw)
+  )
+
+weo_long |>
+  select(iso, country, subject_code, units, year, value) |>
+  slice_head(n = 10)
+```
+
+必要な系列だけに絞ります。
+
+```{r}
+weo_analysis <- weo_long |>
+  filter(
+    subject_code %in% c(
+      "PPPGDP",  # 購買力平価GDP
+      "PPPPC",   # 一人当たり購買力平価GDP
+      "LP",      # 人口
+      "NGDP_RPCH", # 実質GDP成長率
+      "PCPIPCH"    # 消費者物価上昇率
+    ),
+    year >= 2000
+  ) |>
+  select(
+    iso,
+    country,
+    subject_code = subject_code,
+    descriptor = subject_descriptor,
+    units,
+    estimates_start_after,
+    year,
+    value
+  )
+
+weo_analysis |>
+  count(subject_code, units)
+```
+
+## データを安全に結合する
+
+### 製薬会社の財務データと特許件数
+
+```{r}
+analysis_path <- file.path("data_raw", "analysis_data.xlsx")
+
+pharma_finance <- read_excel(
+  analysis_path,
+  sheet = "pharma_finance"
+)
+
+pharma_patent_raw <- read_excel(
+  analysis_path,
+  sheet = "pharma_patent"
+)
+```
+
+特許データは1行が1件なので、企業×年度に集計します。
+
+```{r}
+pharma_patents <- pharma_patent_raw |>
+  count(name, FY, name = "patent_count")
+
+pharma_patents |>
+  arrange(name, FY) |>
+  slice_head(n = 10)
+```
+
+結合前にキーが一意か確認します。
+
+```{r}
+finance_key_check <- pharma_finance |>
+  count(name, FY) |>
+  filter(n > 1)
+
+patent_key_check <- pharma_patents |>
+  count(name, FY) |>
+  filter(n > 1)
+
+list(
+  duplicated_finance_keys = finance_key_check,
+  duplicated_patent_keys = patent_key_check
+)
+```
+
+両方が企業×年度で一意なら、1対1の結合を宣言できます。
+
+```{r}
+patent_year_range <- range(pharma_patent_raw$FY, na.rm = TRUE)
+
+pharma_panel <- pharma_finance |>
+  left_join(
+    pharma_patents,
+    by = join_by(name, FY),
+    relationship = "one-to-one"
+  ) |>
+  mutate(
+    patent_data_in_range = between(
+      FY,
+      patent_year_range[1],
+      patent_year_range[2]
+    ),
+    patent_count_assuming_complete = if_else(
+      patent_data_in_range,
+      replace_na(patent_count, 0L),
+      NA_integer_
+    ),
+    intangible_asset_share = ITA / A,
+    equity_ratio = E / A,
+    roa_proxy = R / A
+  )
+
+pharma_panel |>
+  arrange(name, FY) |>
+  slice_head(n = 12)
+```
+
+`patent_count`の欠損は、そのままでは「0件」と「データ未収録」を区別できません。ここでは、特許ファイルに含まれる年度範囲内だけを完全収録と仮定した補助列を作り、範囲外は`NA`のまま残します。この仮定が妥当かは、データ作成者へ確認する必要があります。
+
+### WEOとグループ対応表
+
+```{r}
+weo_group <- read_excel(
+  file.path("data_raw", "b_weo.xlsx"),
+  sheet = "group_map"
+) |>
+  select(iso3, group) |>
+  distinct(iso3, .keep_all = TRUE)
+
+weo_group |>
+  count(group)
+```
+
+```{r}
+weo_grouped <- weo_analysis |>
+  left_join(
+    weo_group,
+    by = join_by(iso == iso3),
+    relationship = "many-to-one"
+  )
+
+weo_grouped |>
+  filter(!is.na(group)) |>
+  count(group, subject_code)
+```
+
+`relationship = "many-to-one"`は、WEO側には同じ国が年・系列ごとに複数行ある一方、対応表側は国ごとに1行であることを明示します。
+
+### 結合後の検証
+
+```{r}
+n_before <- nrow(weo_analysis)
+n_after <- nrow(weo_grouped)
+
+stopifnot(n_before == n_after)
+```
+
+結合で行数が増えた場合、対応表のキー重複や、結合条件の不足を疑います。
+
+## 中間データを保存する
+
+```{r}
+#| eval: false
+write_rds(bop, file.path("data_clean", "bop_prepared.rds"))
+write_rds(weo_analysis, file.path("data_clean", "weo_long_selected.rds"))
+write_rds(pharma_panel, file.path("data_clean", "pharma_panel.rds"))
+```
+
+保存前に、行数、キー、期間、欠損をまとめます。
+
+```{r}
+tibble(
+  data = c("bop", "weo_analysis", "pharma_panel"),
+  rows = c(nrow(bop), nrow(weo_analysis), nrow(pharma_panel)),
+  columns = c(ncol(bop), ncol(weo_analysis), ncol(pharma_panel))
+)
+```
+
+## 章末演習
+
+### 演習1：TXデータの抽出と集計
+
+`tx_indicator`別、間取り別に、物件数、家賃の平均・中央値、面積の平均を求めてください。物件数が10未満のグループを除き、平均家賃の高い順に並べます。
+
+### 演習2：国際収支統計
+
+1. `fill()`で年を補完する。
+2. `trade_balance = exports - imports`を作る。
+3. 任意の月を一つ選び、貿易収支が最も悪化した年を求める。
+4. 輸出・輸入を、`date`、`series`、`value`の3列を持つ縦長データへ変換する。
+
+### 演習3：製薬会社パネル
+
+財務データと特許件数を企業×年度で結合し、次を検討してください。
+
+- 特許件数と無形資産比率の関係
+- 企業別の時系列変化
+- 欠損特許件数を0とみなす条件
+- このデータだけで因果関係を主張できない理由
+
+### 演習4：WEO
+
+`PPPGDP`、`PPPPC`、`LP`を縦長に変換し、グループ対応表を結合してください。2023年と2030年を残し、各国・各地域の比較に使えるデータを作ります。
+
+::: {.callout-note collapse="true"}
+## 演習1の解答例
+
+```{r}
+tx |>
+  summarise(
+    n = n(),
+    mean_rent = mean(monthly_rent, na.rm = TRUE),
+    median_rent = median(monthly_rent, na.rm = TRUE),
+    mean_size = mean(size_sqm, na.rm = TRUE),
+    .by = c(tx_indicator, layout)
+  ) |>
+  filter(n >= 10) |>
+  arrange(desc(mean_rent))
+```
+:::
+
+## 章末チェック
+
+- [ ] 1行の観測単位を説明してから重複を扱っている。
+- [ ] 欠損補完の方向と根拠を説明できる。
+- [ ] 派生変数を統計の定義から作り、元系列との整合性を確認した。
+- [ ] 分析用の縦持ちと掲載用の横持ちを使い分けられる。
+- [ ] 結合前にキーの一意性、結合後に行数と未結合を確認した。
+- [ ] `data_raw`を上書きせず、再生成可能な中間データを保存した。

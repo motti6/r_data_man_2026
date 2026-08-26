@@ -1,0 +1,707 @@
+---
+title: "第2章 データを自力で取得する"
+subtitle: "ファイル入出力とe-Stat API"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-copy: true
+    code-overflow: wrap
+execute:
+  echo: true
+  warning: false
+  message: false
+params:
+  run_api: false
+---
+
+```{r}
+#| label: ch2-setup
+#| include: false
+options(scipen = 999)
+Sys.setenv(TZ = "Asia/Tokyo")
+library(tidyverse)
+library(readxl)
+library(writexl)
+library(lubridate)
+library(httr2)
+library(jsonlite)
+```
+
+## この章の到達目標
+
+この章を終えると、次のことができるようになります。
+
+1. CSV、Excel、RDSを、文字コードや列型に注意して読み書きする。
+2. データの公表元、取得日時、抽出条件を記録する。
+3. e-Stat APIで統計表を検索し、メタデータを確認してからデータを取得する。
+4. 大規模な取得でページ分割が必要な理由を説明する。
+5. 原データと分析用データを分け、以後の授業で更新可能なデータフローを作る。
+
+## データ分析は「取得」から始まる
+
+分析結果は、コードだけでなく入力データにも依存します。最低限、次を記録します。
+
+| 項目 | 記録例 |
+|---|---|
+| 公表元 | e-Stat、内閣府、IMFなど |
+| 統計・表の名称 | 県民経済計算、国際収支統計など |
+| 識別子 | `statsDataId`、表番号、ファイル名 |
+| 取得日時 | タイムゾーンを含む日時 |
+| 抽出条件 | 地域、系列、期間、単位 |
+| 加工内容 | 欠損補完、単位変換、季節調整など |
+| 保存先 | 原データ、整形済みデータ、最終出力 |
+
+この教材では、次の3層を区別します。
+
+```text
+data_raw/      入手したままのファイル。原則として上書きしない
+data_clean/    コードで整形し、再生成できるデータ
+output_data/   レポート掲載用の表や分析結果
+```
+
+::: {.callout-important}
+## APIは「最新値を取る魔法」ではない
+
+APIは、公表元が定めた入口と形式でデータを受け取る契約です。取得できても、統計の定義、改定、単位、季節調整、速報・確報の区別を理解しなければ分析には使えません。
+:::
+
+## 配布された実データを読む
+
+### CSV：国際収支統計
+
+`a_bop.csv` はUTF-8で保存されています。文字コードを明示します。
+
+```{r}
+bop_path <- file.path("data_raw", "a_bop.csv")
+
+bop_raw <- read_csv(
+  bop_path,
+  locale = locale(encoding = "UTF-8"),
+  trim_ws = TRUE,
+  na = c("", "NA"),
+  show_col_types = FALSE
+)
+
+glimpse(bop_raw)
+```
+
+文字化けした場合は、推測だけでコードを書き換えず、候補を確認します。
+
+```{r}
+#| eval: false
+guess_encoding(bop_path)
+```
+
+### CSV：日米為替
+
+```{r}
+fx_path <- file.path("data_raw", "a_usdjpy.csv")
+
+fx_raw <- read_csv(
+  fx_path,
+  locale = locale(encoding = "UTF-8"),
+  trim_ws = TRUE,
+  na = c("", "NA"),
+  show_col_types = FALSE
+)
+
+glimpse(fx_raw)
+```
+
+CSVを読んだら、最低限、次を確認します。
+
+```{r}
+list(
+  bop_dim = dim(bop_raw),
+  fx_dim = dim(fx_raw),
+  bop_names = names(bop_raw),
+  fx_names = names(fx_raw)
+)
+```
+
+### Excel：複数シートを確認する
+
+```{r}
+analysis_path <- file.path("data_raw", "analysis_data.xlsx")
+excel_sheets(analysis_path)
+```
+
+```{r}
+trade_snapshot <- read_excel(
+  analysis_path,
+  sheet = "trade",
+  skip = 3,
+  col_names = c("frequency", "period", "exports", "imports")
+)
+
+trade_snapshot |>
+  slice_head(n = 5)
+```
+
+Excelでは、表題、単位、注記が表の上部に置かれていることがあります。`skip`で読み飛ばす前に、元ファイルを目で確認し、何行を除いたか記録します。
+
+```{r}
+weo_sheets <- excel_sheets(file.path("data_raw", "b_weo.xlsx"))
+weo_sheets
+```
+
+### RDS：型を保って保存する
+
+整形済みデータをRで再利用する場合、RDSは列型を保ちやすい形式です。
+
+```{r}
+bop_prepared <- bop_raw |>
+  fill(year) |>
+  mutate(
+    year = as.integer(year),
+    month_no = as.integer(month),
+    date = make_date(year, month_no, 1)
+  )
+```
+
+```{r}
+#| eval: false
+write_rds(
+  bop_prepared,
+  file.path("data_clean", "bop_prepared.rds")
+)
+
+bop_again <- read_rds(
+  file.path("data_clean", "bop_prepared.rds")
+)
+```
+
+CSVは他のソフトと共有しやすく、RDSはRの列型を保ちやすいという違いがあります。目的に応じて使い分けます。
+
+## e-Stat API 3.0の全体像
+
+e-Stat APIでは、主に次の順序で処理します。
+
+1. `getStatsList`：統計表を検索する。
+2. `getMetaInfo`：表の分類コードとラベルを確認する。
+3. `getStatsData`：必要な条件で値を取得する。
+4. 結果を保存し、取得ログを残す。
+
+公式情報：
+
+- e-Stat API利用ガイド：<https://www.e-stat.go.jp/api/api-info/api-guide>
+- e-Stat API 3.0仕様：<https://www.e-stat.go.jp/api/api-info/e-stat-manual3-0>
+- API 3.0 Swagger：<https://api.e-stat.go.jp/swagger-ui/e-statapi3.0.html>
+
+### アプリケーションIDを安全に保存する
+
+アプリケーションIDをQMDや共有コードへ直接書かないでください。プロジェクト直下に `.Renviron` を作り、次のように保存します。
+
+```text
+ESTAT_APP_ID=ここに自分のアプリケーションID
+```
+
+この教材には雛形 `.Renviron.example` があります。コピー後にRを再起動し、設定を確認します。
+
+```{r}
+# IDそのものは表示しない
+nzchar(Sys.getenv("ESTAT_APP_ID"))
+```
+
+::: {.callout-warning}
+## 共有時の注意
+
+`.Renviron` は `.gitignore` の対象です。画面共有、GitHub、提出物へアプリケーションIDを載せないようにします。
+:::
+
+## まず1回、APIを直接呼んでみる
+
+ヘルパー関数を使う前に、APIへ何を送って何が返るかを最小例で確認します。次のコードは、統計表情報取得APIへ検索語を送る例です。授業ではR Consoleで1行ずつ実行してください。
+
+```{r}
+#| label: estat-minimal-request
+#| eval: false
+app_id <- Sys.getenv("ESTAT_APP_ID")
+stopifnot(nzchar(app_id))
+
+request_url <- paste0(
+  "https://api.e-stat.go.jp/rest/3.0/app/json/",
+  "getStatsList"
+)
+
+req <- request(request_url) |>
+  req_url_query(
+    appId = app_id,
+    lang = "J",
+    searchWord = "県民経済計算",
+    limit = 10,
+    explanationGetFlg = "N"
+  ) |>
+  req_user_agent("university-r-course-2026") |>
+  req_timeout(seconds = 60)
+
+resp <- req_perform(req)
+body <- resp_body_json(resp, simplifyVector = FALSE)
+
+body$GET_STATS_LIST$RESULT
+```
+
+`HTTP 200`でも、API本文の`RESULT$STATUS`にエラーが記録されることがあります。したがって、HTTP応答とe-Stat側のステータスの両方を確認します。また、アプリケーションIDはURLのクエリに入るため、リクエストURL全体を提出物やチャットへ貼り付けないでください。
+
+::: {.callout-tip}
+## 最小例で確認する3点
+
+1. エンドポイントは`getStatsList`、`getMetaInfo`、`getStatsData`のどれか。
+2. 入力はアプリケーションID、統計表ID、検索語、抽出条件のどれか。
+3. 出力本文のどこにステータス、メタデータ、値があるか。
+:::
+
+## 講義用ヘルパーを読み込む
+
+APIの仕組みを理解しながら、JSONの形の違いやページ分割を扱うための関数を用意しています。
+
+```{r}
+source(file.path("R", "estat_helpers.R"))
+```
+
+主な関数は次のとおりです。
+
+| 関数 | 役割 |
+|---|---|
+| `estat_search_table()` | キーワードから統計表を検索 |
+| `estat_get_metadata()` | 分類コード、ラベル、単位を取得 |
+| `estat_extract_codebook()` | メタデータを表形式へ変換 |
+| `estat_get_all_pages()` | `NEXT_KEY`をたどって全ページを取得 |
+| `estat_extract_values()` | 取得値をtibbleへ変換 |
+| `estat_add_labels()` | コードに日本語ラベルを結合 |
+| `estat_filter_label()` | 次元名を決め打ちせず、指定ラベルの行を抽出 |
+| `estat_download()` | 検索後の取得・整形を一括実行 |
+| `estat_save_download()` | 原レスポンス、整形値、コード表、ログを保存 |
+
+## 手順1：統計表を検索する
+
+例として「県民経済計算」を検索します。APIを実行するチャンクは、通常のプレビューでは動かさないようにしています。
+
+```{r}
+#| label: estat-search
+#| eval: false
+candidate_tables <- estat_search_table(
+  search_word = "県民経済計算",
+  limit = 100
+)
+
+candidate_tables |>
+  select(stats_data_id, stat_name, title, cycle, survey_date, updated_date) |>
+  print(n = 30)
+```
+
+検索結果の1行目を無条件に選んではいけません。タイトル、周期、調査年月、更新日を確認し、目的に合う `stats_data_id` を選びます。
+
+```{r}
+#| eval: false
+candidate_tables |>
+  filter(str_detect(title, "県内総生産|県民所得"))
+```
+
+## 手順2：メタデータを読む
+
+選んだ統計表の識別子を設定します。
+
+```{r}
+#| eval: false
+stats_data_id <- "検索結果から選んだID"
+
+meta_root <- estat_get_metadata(stats_data_id)
+codebook <- estat_extract_codebook(meta_root)
+
+codebook |>
+  count(dimension_id, dimension_name)
+```
+
+各統計表は、表章項目、カテゴリ、地域、時間などの次元を持ちます。実際のIDは表によって異なるため、固定観念で `cat01` などを書かず、コード表を確認します。
+
+```{r}
+#| eval: false
+codebook |>
+  filter(dimension_id %in% c("tab", "cat01", "cat02", "area", "time")) |>
+  select(dimension_id, dimension_name, code, label, unit, parent_code) |>
+  print(n = 100)
+```
+
+ここで確認することは、次の5点です。
+
+1. 欲しい系列のコードは何か。
+2. 地域コードは全国か都道府県か。
+3. 時間コードが年・年度・月のどれか。
+4. 値の単位は何か。
+5. 上位分類と内訳を重複して取得していないか。
+
+## 手順3：小さく試して取得する
+
+最初から全期間・全地域を取得せず、数地域・数期間で列構造と単位を確認します。
+
+```{r}
+#| eval: false
+first_page <- estat_get_data_page(
+  stats_data_id = stats_data_id,
+  limit = 1000,
+  # 次のコードはメタデータを見て置き換える
+  cdArea = "地域コード",
+  cdTimeFrom = "開始時点",
+  cdTimeTo = "終了時点"
+)
+
+small_values <- estat_extract_values(first_page)
+small_values
+```
+
+取得条件は、表の次元に合わせて `cdCat01`、`cdArea`、`cdTimeFrom` などを追加します。存在しない次元を指定するとエラーになります。
+
+## 手順4：コードをラベルへ変換する
+
+APIの値にはコードが含まれます。コード表を結合して、人が読めるラベルを付けます。
+
+```{r}
+#| eval: false
+small_labeled <- estat_add_labels(small_values, codebook)
+
+small_labeled |>
+  select(ends_with("_label"), value, unit, annotation) |>
+  slice_head(n = 20)
+```
+
+ラベルを付けた後も、分析キーとして元のコード列を残します。表記変更があってもコードの方が安定している場合があるためです。
+
+## 手順5：全ページを取得する
+
+結果件数が上限を超えると、レスポンスに `NEXT_KEY` が返ります。講義用関数は、その値を次の `startPosition` として繰り返し取得します。
+
+```{r}
+#| eval: false
+pages <- estat_get_all_pages(
+  stats_data_id = stats_data_id,
+  limit = 100000,
+  cdArea = "必要な地域コード",
+  cdTimeFrom = "開始時点",
+  cdTimeTo = "終了時点"
+)
+
+length(pages)
+
+all_values <- pages |>
+  map(estat_extract_values) |>
+  list_rbind()
+```
+
+::: {.callout-tip}
+## 取得量を先に減らす
+
+ページ分割を実装していても、不要な全表取得は避けます。分析に必要な系列、地域、期間をメタデータから選び、サーバー側で絞り込みます。
+:::
+
+## 手順6：取得物とログを保存する
+
+便利関数を使うと、メタデータ、全ページ、値、ラベル付きデータをまとめて取得できます。
+
+```{r}
+#| eval: false
+download <- estat_download(
+  stats_data_id = stats_data_id,
+  limit = 100000,
+  cdArea = "必要な地域コード",
+  cdTimeFrom = "開始時点",
+  cdTimeTo = "終了時点"
+)
+
+paths <- estat_save_download(
+  download = download,
+  stem = "prefectural_accounts_example",
+  raw_dir = file.path("data_raw", "estat"),
+  clean_dir = "data_clean"
+)
+
+paths
+```
+
+保存されるものは次のとおりです。
+
+- APIレスポンスのJSON/RDS：取得時点のレスポンス。JSONは目視・他言語向け、RDSはRでの再利用向け
+- ラベル付きデータのCSV/RDS：分析用データ
+- コード表CSV：分類と単位の根拠
+- 取得ログCSV：ID、取得日時、条件、ページ数
+
+## 実践：人口推計を取得し、第5章へ渡す
+
+ここでは、e-Statの人口推計「都道府県、年齢（5歳階級）、男女別人口」をAPIから取得します。使用する統計表表示IDは `0003448237` です。第5章では、このうち2020年の都道府県別総人口を県民経済計算と結合し、一人当たりGDPを作ります。
+
+最初にメタデータだけを確認します。次元名やコードを先に見る習慣を付けてください。
+
+```{r}
+#| label: estat-population-metadata
+#| eval: !expr params$run_api
+population_stats_id <- "0003448237"
+
+population_meta <- estat_get_metadata(population_stats_id)
+population_codebook <- estat_extract_codebook(population_meta)
+
+population_codebook |>
+  count(dimension_id, dimension_name)
+```
+
+主要なラベルがどの次元に属するか確認します。
+
+```{r}
+#| label: estat-population-codebook
+#| eval: !expr params$run_api
+population_codebook |>
+  filter(
+    label %in% c(
+      "人口", "男女計", "総数", "総人口",
+      "2020年10月1日現在", "東京都", "北海道"
+    )
+  ) |>
+  select(dimension_id, dimension_name, code, label, unit, parent_code)
+
+population_time_2020 <- population_codebook |>
+  filter(
+    dimension_id == "time",
+    label == "2020年10月1日現在"
+  ) |>
+  pull(code)
+
+stopifnot(length(population_time_2020) == 1)
+```
+
+次に値を取得します。メタデータから得た時間コードを`cdTimeFrom`と`cdTimeTo`へ渡し、2020年だけをサーバー側で絞り込みます。講義ではAPIへの負荷を避けるため、取得は一度だけ行い、レスポンスと整形済みデータを保存します。
+
+```{r}
+#| label: estat-population-download
+#| eval: !expr params$run_api
+population_download <- estat_download(
+  stats_data_id = population_stats_id,
+  limit = 100000,
+  cdTimeFrom = population_time_2020,
+  cdTimeTo = population_time_2020
+)
+
+population_download$data |>
+  select(ends_with("_label"), value, unit) |>
+  slice_head(n = 10)
+```
+
+ラベルの属する列を `cat01` などに決め打ちせず、メタデータから付けたラベルを順に使って抽出します。
+
+```{r}
+#| label: estat-population-clean
+#| eval: !expr params$run_api
+pref_population_2020 <- population_download$data |>
+  estat_filter_label("人口") |>
+  estat_filter_label("男女計") |>
+  estat_filter_label("総数") |>
+  estat_filter_label("総人口") |>
+  estat_filter_label("2020年10月1日現在") |>
+  filter(
+    !is.na(area_label),
+    str_detect(area_label, "(都|道|府|県)$")
+  ) |>
+  transmute(
+    code = str_sub(area, 1, 2),
+    pref = area_label,
+    population = case_when(
+      unit == "人" ~ value,
+      unit == "千人" ~ value * 1000,
+      TRUE ~ NA_real_
+    ),
+    original_value = value,
+    original_unit = unit,
+    time = time_label,
+    stats_data_id = population_stats_id
+  ) |>
+  arrange(code)
+
+if (nrow(pref_population_2020) != 47) {
+  stop(
+    "都道府県が47行になりません。ラベル、表の改定、抽出条件を確認してください。"
+  )
+}
+if (anyDuplicated(pref_population_2020$code)) {
+  stop("都道府県コードが重複しています。抽出した次元を確認してください。")
+}
+if (any(is.na(pref_population_2020$population))) {
+  stop("人口の単位を人へ変換できない行があります。unit列を確認してください。")
+}
+
+pref_population_2020 |>
+  slice_head(n = 10)
+```
+
+原レスポンス、コード表、取得ログを保存し、第5章で使う47都道府県の表も別に保存します。
+
+```{r}
+#| label: estat-population-save
+#| eval: !expr params$run_api
+estat_save_download(
+  download = population_download,
+  stem = "population_prefecture_2020_base",
+  raw_dir = file.path("data_raw", "estat"),
+  clean_dir = "data_clean"
+)
+
+write_csv(
+  pref_population_2020,
+  file.path("data_clean", "pref_population_2020.csv"),
+  na = ""
+)
+write_rds(
+  pref_population_2020,
+  file.path("data_clean", "pref_population_2020.rds")
+)
+```
+
+::: {.callout-note}
+## なぜ配布ファイルも残すのか
+
+API取得にはアプリケーションID、通信環境、公表元の稼働状況が影響します。授業の再現性は配布スナップショットで確保し、更新能力はAPI実習で身につけます。取得日時と表IDを残せば、値が後に改定された場合も差を説明できます。
+:::
+
+## パラメータを使ってAPI実行を切り替える
+
+通常のプレビューで毎回APIへアクセスすると、授業中に結果が変わったり、通信エラーが起きたりします。APIの取得は明示的に実行し、その後は保存済みデータを使います。上の人口推計チャンクは、`run_api` が `true` のときだけ実行されます。
+
+```{r}
+run_api <- isTRUE(params$run_api)
+has_key <- nzchar(Sys.getenv("ESTAT_APP_ID"))
+
+tibble(run_api, has_key)
+```
+
+PowerShellから実行する例です。
+
+```powershell
+quarto render chapter2_2026.qmd -P run_api:true
+```
+
+ただし、授業ではR Consoleで検索、メタデータ確認、小規模取得を一つずつ実行する方が、何を取得したか理解しやすくなります。
+
+## 以後の章で使うデータの選び方
+
+更新済みファイルがあればそれを使い、なければ配布スナップショットを使う関数を作れます。
+
+```{r}
+read_prefer_updated <- function(
+    updated_path,
+    snapshot_reader,
+    required_columns = character()) {
+  data <- if (file.exists(updated_path)) {
+    message("data_cleanの更新済みデータを使用します: ", updated_path)
+    read_rds(updated_path)
+  } else {
+    message("配布スナップショットを使用します。")
+    snapshot_reader()
+  }
+
+  missing_columns <- setdiff(required_columns, names(data))
+  if (length(missing_columns) > 0) {
+    stop(
+      "必要な列がありません: ",
+      paste(missing_columns, collapse = ", "),
+      call. = FALSE
+    )
+  }
+
+  data
+}
+```
+
+```{r}
+#| eval: false
+bop_for_analysis <- read_prefer_updated(
+  updated_path = file.path("data_clean", "bop_updated.rds"),
+  snapshot_reader = function() {
+    read_csv(
+      file.path("data_raw", "a_bop.csv"),
+      locale = locale(encoding = "UTF-8"),
+      show_col_types = FALSE
+    )
+  },
+  required_columns = c("year", "month", "exports", "imports")
+)
+```
+
+この運用により、講義は安定した配布データで再現でき、学生はAPIで更新する能力も身につけられます。
+
+## API取得時のよくある問題
+
+| 症状 | 確認点 |
+|---|---|
+| `ESTAT_APP_IDが設定されていません` | `.Renviron`の場所、Rの再起動 |
+| 検索結果が多すぎる | 検索語、統計分野、周期、更新日 |
+| 0件になる | コードをラベルで指定していないか、期間形式 |
+| 値が重複して見える | 上位分類と内訳、単位、表章項目 |
+| 行数が想定より少ない | `NEXT_KEY`、取得上限、条件 |
+| 数値が文字列になる | 記号、秘匿値、欠測記号、注釈 |
+| 昨日と値が違う | 速報・確報、遡及改定、取得日時 |
+
+## 章末演習
+
+### 演習1：ファイルの品質確認
+
+`a_bop.csv` と `a_usdjpy.csv` を読み、次を表にしてください。
+
+- 行数と列数
+- 列名
+- 列ごとの型
+- 欠損数
+- 最初と最後の年月
+
+### 演習2：e-Statで統計表を探す
+
+関心のある政府統計を一つ決め、`estat_search_table()`で候補を探してください。採用した表について、次を記録します。
+
+- `stats_data_id`
+- 統計名と表題
+- 周期
+- 更新日
+- 採用理由
+- 採用しなかった似た表との違い
+
+### 演習3：メタデータから取得仕様を作る
+
+演習2で選んだ表について、コード表から次を抽出してください。
+
+- 分析に使う系列コード
+- 地域コード
+- 期間コード
+- 単位
+- 注記または欠測記号
+
+### 演習4：取得から保存まで
+
+3地域以上、5時点以上、1系列以上をAPIから取得し、次を保存してください。
+
+1. 原レスポンス
+2. ラベル付き整形データ
+3. コード表
+4. 取得ログ
+5. データの内容を説明する100字程度のREADME
+
+### 演習5：次回講義へAPIデータを引き渡す
+
+次回以降で使いたい政府統計を一つ選び、API取得後の**データ契約**を決めてください。
+
+- 1行の観測単位
+- 必須列名と型
+- キー列と重複の許否
+- 単位
+- 対象期間
+- 欠測値の表現
+- 保存ファイル名
+
+推奨例は、この章の人口推計です。`pref_population_2020.csv`について、`code`、`pref`、`population`が必須で、都道府県コードが一意、47行であることを検査します。余裕があれば、県民経済計算や国際収支についても候補表を検索し、次回講義で使える整形済みファイルとREADMEを準備してください。
+
+## 章末チェック
+
+- [ ] 文字コードと欠損記号を明示してCSVを読める。
+- [ ] Excelのシート名と表頭を確認してから読み込める。
+- [ ] APIキーをコードへ直接書かず、環境変数で管理できる。
+- [ ] 統計表検索、メタデータ確認、小規模取得、全件取得の順序を説明できる。
+- [ ] コードとラベルを両方残せる。
+- [ ] 取得日時、条件、単位、改定可能性を記録できる。
+- [ ] 後続章へ渡すデータの観測単位、必須列、キーを定義できる。

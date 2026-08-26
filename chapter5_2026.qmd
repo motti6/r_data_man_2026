@@ -1,0 +1,857 @@
+---
+title: "第5章 ggplot2による実データ可視化"
+subtitle: "分布、関係、推移、ランキングを伝える"
+---
+
+# この章の到達目標
+
+1. 分析目的と変数の型に応じて、適切なグラフを選べる。
+2. `ggplot()`、`aes()`、`geom_*()`の役割を説明できる。
+3. 賃貸物件、貿易、国際収支、WEO、都道府県GDPを可視化できる。
+4. 軸、単位、凡例、注記、出所を整え、第三者に伝わる図を作れる。
+5. 異なる単位の系列を、安易な二軸グラフではなく、指数化やファセットで比較できる。
+6. 図をオブジェクトとして保存し、再現可能な形式で出力できる。
+:::
+
+```{r}
+#| label: setup-ch5
+#| include: false
+library(tidyverse)
+library(readxl)
+library(lubridate)
+
+Sys.setenv(TZ = "Asia/Tokyo")
+
+dir.create("data_clean", showWarnings = FALSE)
+dir.create("output_data", showWarnings = FALSE)
+dir.create("figures", showWarnings = FALSE)
+
+# 賃貸物件
+tx_df <- read_excel(
+  file.path("data_raw", "analysis_data.xlsx"),
+  sheet = "tx_data"
+) |>
+  mutate(
+    line_group = if_else(tx_indicator == 1, "TX沿線", "その他"),
+    age_group = case_when(
+      building_age <= 5 ~ "築5年以下",
+      building_age <= 15 ~ "築6～15年",
+      building_age <= 30 ~ "築16～30年",
+      TRUE ~ "築31年以上"
+    )
+  )
+
+# 貿易統計（百万円、季節調整値）
+trade <- read_excel(
+  file.path("data_raw", "analysis_data.xlsx"),
+  sheet = "trade",
+  skip = 3,
+  col_names = c("frequency", "date_text", "exports", "imports"),
+  col_types = c("text", "text", "numeric", "numeric")
+) |>
+  mutate(date = ym(date_text)) |>
+  select(date, exports, imports)
+
+# 国際収支
+bop <- read_csv(
+  file.path("data_raw", "a_bop.csv"),
+  locale = locale(encoding = "UTF-8"),
+  col_types = cols(.default = col_character()),
+  na = c("", "NA"),
+  trim_ws = TRUE
+) |>
+  fill(year, .direction = "down") |>
+  mutate(
+    year = parse_integer(year),
+    month_num = as.integer(month),
+    date = make_date(year, month_num, 1),
+    across(
+      c(current_account, goods_services_balance, exports, imports,
+        services_balance, primary_income, secondary_income),
+      ~ parse_number(as.character(.x))
+    ),
+    trade_balance = exports - imports
+  )
+
+# 都道府県GDP
+gdp_pref <- read_excel(
+  file.path("data_raw", "c_pref_gdp.xlsx"),
+  sheet = "gdp"
+) |>
+  select(code, pref, matches("^\\d{4}$")) |>
+  pivot_longer(
+    cols = matches("^\\d{4}$"),
+    names_to = "year",
+    values_to = "gdp"
+  ) |>
+  mutate(
+    code = str_pad(as.character(code), width = 2, pad = "0"),
+    year = parse_integer(year)
+  )
+```
+
+# グラフを描く前に決めること
+
+1. **何を伝えるか**：分布、比較、関係、推移のどれか。
+2. **観測単位は何か**：物件、国、都道府県、月など。
+3. **変数の型は何か**：連続値、カテゴリ、日付など。
+4. **単位と対象期間は何か**。
+5. **探索用か、報告用か**。
+
+| 確認したいこと | 代表的なグラフ |
+|---|---|
+| カテゴリの件数 | 棒グラフ |
+| 連続値の分布 | ヒストグラム、密度図 |
+| 群ごとの分布 | 箱ひげ図、バイオリン図 |
+| 2変数の関係 | 散布図 |
+| 時系列の推移 | 折れ線、棒グラフ |
+| 複数群・複数系列 | 色、線種、ファセット |
+
+::: {.callout-important}
+## グラフは因果関係を自動的に示さない
+
+散布図に右上がりの傾向があっても、他の変数、逆方向の因果、データの選択によって生じた可能性があります。グラフは、データの特徴を発見し、仮説や分析結果を伝える道具です。
+:::
+
+# ggplot2の基本構造
+
+```{r}
+ggplot(
+  data = tx_df,
+  mapping = aes(x = size_sqm, y = monthly_rent)
+) +
+  geom_point()
+```
+
+- `ggplot(data, aes(...))`：データと変数の対応を決める。
+- `geom_*()`：点、線、棒、箱などの形を加える。
+- `scale_*()`：軸、色、目盛り、ラベル形式を調整する。
+- `labs()`：タイトル、軸名、凡例、注記を加える。
+- `facet_*()`：小さな複数図へ分割する。
+- `theme_*()`：背景、文字、凡例位置などを整える。
+
+`+`は前の行の末尾に置きます。
+
+# カテゴリの件数：棒グラフ
+
+間取り別の物件数を確認します。
+
+```{r}
+#| fig-cap: "間取り別の掲載物件数"
+tx_df |>
+  count(layout, name = "n") |>
+  mutate(layout = fct_reorder(layout, n)) |>
+  ggplot(aes(x = layout, y = n)) +
+  geom_col() +
+  coord_flip() +
+  labs(
+    x = "間取り",
+    y = "物件数",
+    caption = "資料：過去講義用の賃貸物件データ"
+  ) +
+  theme_minimal(base_family = "sans")
+```
+
+`geom_bar()`は行数を内部で数えます。集計済みの値を棒の高さにするときは`geom_col()`を使います。
+
+上位の間取りだけを示す場合は、除外条件を注記します。
+
+```{r}
+#| fig-cap: "掲載件数上位10間取り"
+layout_top10 <- tx_df |>
+  count(layout, sort = TRUE) |>
+  slice_head(n = 10) |>
+  mutate(layout = fct_reorder(layout, n))
+
+ggplot(layout_top10, aes(x = layout, y = n)) +
+  geom_col() +
+  coord_flip() +
+  labs(
+    x = NULL,
+    y = "物件数",
+    caption = "注：掲載件数上位10間取り。資料：過去講義用データ"
+  ) +
+  theme_minimal(base_family = "sans")
+```
+
+# 連続値の分布：ヒストグラム
+
+```{r}
+#| fig-cap: "月額家賃の分布"
+ggplot(tx_df, aes(x = monthly_rent)) +
+  geom_histogram(binwidth = 1, boundary = 0) +
+  labs(
+    x = "月額家賃",
+    y = "物件数",
+    caption = "資料：過去講義用の賃貸物件データ"
+  ) +
+  theme_minimal(base_family = "sans")
+```
+
+`binwidth`を変えると見え方も変わります。
+
+```{r}
+#| fig-cap: "階級幅による家賃分布の見え方"
+bind_rows(
+  tx_df |>
+    transmute(monthly_rent, bin = "階級幅0.5"),
+  tx_df |>
+    transmute(monthly_rent, bin = "階級幅2.0")
+) |>
+  ggplot(aes(x = monthly_rent)) +
+  geom_histogram(
+    data = ~ filter(.x, bin == "階級幅0.5"),
+    binwidth = 0.5
+  ) +
+  geom_histogram(
+    data = ~ filter(.x, bin == "階級幅2.0"),
+    binwidth = 2
+  ) +
+  facet_wrap(~ bin, scales = "free_y") +
+  labs(x = "月額家賃", y = "物件数") +
+  theme_minimal(base_family = "sans")
+```
+
+この例では2つの`geom_histogram()`を重ねていますが、各ファセットには対応するデータだけが描かれます。より簡潔にするなら、別々の図を作る方法もあります。
+
+# 群ごとの分布：箱ひげ図
+
+```{r}
+#| fig-cap: "TX沿線区分別の家賃分布"
+ggplot(tx_df, aes(x = line_group, y = monthly_rent)) +
+  geom_boxplot() +
+  labs(
+    x = NULL,
+    y = "月額家賃",
+    caption = "資料：過去講義用の賃貸物件データ"
+  ) +
+  theme_minimal(base_family = "sans")
+```
+
+箱ひげ図は中央値と四分位範囲を比較できますが、群の件数を直接示しません。件数も併記します。
+
+```{r}
+tx_df |>
+  count(line_group)
+```
+
+間取りを限定して比較すると、構成差を少し抑えられます。
+
+```{r}
+#| fig-cap: "主要間取りに限定した沿線区分別家賃分布"
+tx_df |>
+  filter(layout %in% c("1K", "1LDK", "2LDK", "3LDK")) |>
+  ggplot(aes(x = line_group, y = monthly_rent)) +
+  geom_boxplot() +
+  facet_wrap(~ layout, scales = "free_y") +
+  labs(
+    x = NULL,
+    y = "月額家賃",
+    caption = "資料：過去講義用の賃貸物件データ"
+  ) +
+  theme_minimal(base_family = "sans")
+```
+
+# 2変数の関係：散布図
+
+```{r}
+#| fig-cap: "専有面積と家賃"
+ggplot(tx_df, aes(x = size_sqm, y = monthly_rent)) +
+  geom_point(alpha = 0.35) +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(
+    x = "専有面積",
+    y = "月額家賃",
+    caption = "資料：過去講義用の賃貸物件データ"
+  ) +
+  theme_minimal(base_family = "sans")
+```
+
+大きな物件が少数含まれるため、全体像が圧縮される場合があります。データを削除する前に、分位点を確認します。
+
+```{r}
+quantile(tx_df$size_sqm, c(0.5, 0.9, 0.95, 0.99, 1))
+```
+
+99パーセンタイル以下を拡大表示します。これはデータ削除ではなく、表示範囲を限定した別図です。
+
+```{r}
+#| fig-cap: "専有面積99パーセンタイル以下の拡大図"
+size_p99 <- quantile(tx_df$size_sqm, 0.99)
+
+ggplot(tx_df, aes(x = size_sqm, y = monthly_rent, shape = line_group)) +
+  geom_point(alpha = 0.45) +
+  geom_smooth(method = "lm", se = FALSE) +
+  coord_cartesian(xlim = c(0, size_p99)) +
+  labs(
+    x = "専有面積",
+    y = "月額家賃",
+    shape = "区分",
+    caption = "注：x軸は面積の99パーセンタイルまでを表示。資料：過去講義用データ"
+  ) +
+  theme_minimal(base_family = "sans")
+```
+
+`coord_cartesian()`は表示範囲を変えるだけで、回帰線の推計に使う観測を削除しません。分析対象を限定したい場合は`filter()`を使い、その理由を明示します。
+
+# 時系列：貿易統計
+
+輸出と輸入を縦持ちへ変換します。
+
+```{r}
+trade_long <- trade |>
+  pivot_longer(
+    cols = c(exports, imports),
+    names_to = "series",
+    values_to = "value"
+  ) |>
+  mutate(
+    series = recode(
+      series,
+      exports = "輸出",
+      imports = "輸入"
+    )
+  )
+```
+
+```{r}
+#| fig-cap: "輸出入額の推移（季節調整値）"
+ggplot(trade_long, aes(x = date, y = value, linetype = series)) +
+  geom_line(linewidth = 0.7) +
+  scale_x_date(
+    date_breaks = "2 years",
+    date_labels = "%Y"
+  ) +
+  scale_y_continuous(
+    labels = scales::label_number(
+      scale = 1 / 1e6,
+      suffix = "兆円",
+      accuracy = 0.1
+    )
+  ) +
+  labs(
+    x = NULL,
+    y = "通関額",
+    linetype = NULL,
+    caption = "注：百万円を兆円表示。季節調整値。資料：過去講義用の貿易統計スナップショット"
+  ) +
+  theme_minimal(base_family = "sans") +
+  theme(legend.position = "bottom")
+```
+
+2020年前後を背景で示します。
+
+```{r}
+#| fig-cap: "輸出入額の推移と2020年の期間表示"
+ggplot(trade_long, aes(x = date, y = value, linetype = series)) +
+  annotate(
+    "rect",
+    xmin = as.Date("2020-01-01"),
+    xmax = as.Date("2020-12-31"),
+    ymin = -Inf,
+    ymax = Inf,
+    alpha = 0.12
+  ) +
+  geom_line(linewidth = 0.7) +
+  scale_y_continuous(
+    labels = scales::label_number(scale = 1 / 1e6, suffix = "兆円")
+  ) +
+  labs(
+    x = NULL,
+    y = "通関額",
+    linetype = NULL,
+    caption = "注：網掛けは2020年。資料：過去講義用の貿易統計スナップショット"
+  ) +
+  theme_minimal(base_family = "sans") +
+  theme(legend.position = "bottom")
+```
+
+網掛けは出来事と因果関係を証明するものではなく、読者が時期を確認する補助です。
+
+## 貿易収支
+
+```{r}
+trade_balance <- trade |>
+  mutate(balance = exports - imports)
+```
+
+```{r}
+#| fig-cap: "貿易収支の推移"
+ggplot(trade_balance, aes(x = date, y = balance)) +
+  geom_col() +
+  geom_hline(yintercept = 0) +
+  scale_y_continuous(
+    labels = scales::label_number(scale = 1 / 1e6, suffix = "兆円")
+  ) +
+  labs(
+    x = NULL,
+    y = "輸出－輸入",
+    caption = "注：百万円を兆円表示。資料：過去講義用の貿易統計スナップショット"
+  ) +
+  theme_minimal(base_family = "sans")
+```
+
+# 国際収支の構成を可視化する
+
+```{r}
+bop_long <- bop |>
+  select(date, current_account, trade_balance, services_balance, primary_income, secondary_income) |>
+  pivot_longer(
+    cols = -date,
+    names_to = "component",
+    values_to = "value"
+  )
+```
+
+```{r}
+#| fig-cap: "国際収支の主要項目"
+bop_long |>
+  filter(date >= as.Date("2015-01-01")) |>
+  ggplot(aes(x = date, y = value)) +
+  geom_line() +
+  geom_hline(yintercept = 0) +
+  facet_wrap(
+    ~ component,
+    scales = "free_y",
+    ncol = 1
+  ) +
+  labs(
+    x = NULL,
+    y = "配布データの単位",
+    caption = "資料：財務省・日本銀行『国際収支統計』の講義用スナップショット"
+  ) +
+  theme_minimal(base_family = "sans")
+```
+
+異なる振れ幅の系列をファセットし、各図で縦軸を変えています。系列間の絶対額を比較したい場合は、共通軸を使う必要があります。
+
+# 異なる単位を比較する：指数化
+
+輸出額、輸入額、経常収支は水準も符号も異なるため、経常収支を含む単純指数化は注意が必要です。ここでは正の値である輸出と輸入を、2019年平均=100へ指数化します。
+
+```{r}
+trade_index <- trade_long |>
+  group_by(series) |>
+  mutate(
+    base_2019 = mean(value[year(date) == 2019], na.rm = TRUE),
+    index_2019 = value / base_2019 * 100
+  ) |>
+  ungroup()
+```
+
+```{r}
+#| fig-cap: "輸出入額の指数（2019年平均=100）"
+ggplot(trade_index, aes(x = date, y = index_2019, linetype = series)) +
+  geom_hline(yintercept = 100) +
+  geom_line(linewidth = 0.7) +
+  labs(
+    x = NULL,
+    y = "2019年平均=100",
+    linetype = NULL,
+    caption = "資料：過去講義用の貿易統計スナップショット"
+  ) +
+  theme_minimal(base_family = "sans") +
+  theme(legend.position = "bottom")
+```
+
+二軸グラフは、軸の取り方で関係が強く見えたり弱く見えたりします。指数化、前年差、標準化、ファセットを優先します。
+
+# 都道府県GDPのランキング
+
+2021年の都道府県別GDP上位15地域を描きます。
+
+```{r}
+gdp_2021_top15 <- gdp_pref |>
+  filter(year == 2021) |>
+  slice_max(gdp, n = 15, with_ties = FALSE) |>
+  mutate(pref = fct_reorder(pref, gdp))
+```
+
+```{r}
+#| fig-cap: "都道府県別GDP上位15地域（2021年）"
+ggplot(gdp_2021_top15, aes(x = pref, y = gdp)) +
+  geom_col() +
+  coord_flip() +
+  scale_y_continuous(
+    labels = scales::label_number(
+      scale = 1 / 1e6,
+      suffix = "兆円",
+      accuracy = 1
+    )
+  ) +
+  labs(
+    x = NULL,
+    y = "gdp",
+    caption = "注：名目値、百万円を兆円表示。資料：内閣府『県民経済計算』講義用データ"
+  ) +
+  theme_minimal(base_family = "sans")
+```
+
+ランキングは規模を示しますが、人口規模の影響を受けます。一人当たりの比較には人口データとの結合が必要です。
+
+# 第2章のAPIデータを使う
+
+第2章のAPI実習で`data_clean/pref_population_2020.csv`を作成した場合、2020年の一人当たりGDPを計算できます。APIをまだ実行していない場合も、この章の他の図は配布スナップショットだけで再現できます。
+
+```{r}
+has_api_population <- file.exists("data_clean/pref_population_2020.csv")
+has_api_population
+```
+
+```{r}
+#| label: plot-gdp-per-capita
+if (has_api_population) {
+  population_2020 <- read_csv(
+    "data_clean/pref_population_2020.csv",
+    show_col_types = FALSE
+  )
+
+  gdp_per_capita_2020 <- gdp_pref |>
+    filter(year == 2020) |>
+    inner_join(
+      population_2020 |>
+        select(pref, population),
+      by = join_by(pref),
+      relationship = "one-to-one"
+    ) |>
+    mutate(
+      gdp_per_capita_10k_yen = gdp * 100 / population
+    ) |>
+    slice_max(gdp_per_capita_10k_yen, n = 15, with_ties = FALSE) |>
+    mutate(pref = fct_reorder(pref, gdp_per_capita_10k_yen))
+
+  ggplot(
+    gdp_per_capita_2020,
+    aes(x = pref, y = gdp_per_capita_10k_yen)
+  ) +
+    geom_col() +
+    coord_flip() +
+    labs(
+      x = NULL,
+      y = "一人当たりGDP（万円）",
+      caption = paste(
+        "資料：内閣府『県民経済計算』、",
+        "e-Stat『人口推計』から作成"
+      )
+    ) +
+    theme_minimal(base_family = "sans")
+} else {
+  message(
+    "第2章でdata_clean/pref_population_2020.csvを作成すると、",
+    "一人当たりGDPの図を表示できます。"
+  )
+}
+```
+
+`gdp`は百万円、人口は人なので、`gdp * 100 / population`で一人当たり万円になります。単位変換は式と注記の両方へ残します。
+
+# WEOで国際比較を描く
+
+WEOは、1行が1国・1指標、年が横方向に並ぶ形式です。必要な系列を縦長へ変換します。
+
+```{r}
+weo_raw <- read_excel(
+  file.path("data_raw", "b_weo.xlsx"),
+  sheet = "weo",
+  col_types = "text",
+  na = c("", "--", "...", "n/a")
+)
+
+year_columns <- names(weo_raw) |>
+  str_subset("^\\d{4}$")
+
+weo_long <- weo_raw |>
+  pivot_longer(
+    cols = all_of(year_columns),
+    names_to = "year",
+    values_to = "value_raw"
+  ) |>
+  mutate(
+    year = parse_integer(year),
+    value = parse_number(value_raw)
+  )
+
+group_map <- read_excel(
+  file.path("data_raw", "b_weo.xlsx"),
+  sheet = "group_map"
+) |>
+  select(iso3, group) |>
+  distinct(iso3, .keep_all = TRUE)
+```
+
+2023年の購買力平価GDPと一人当たりGDPを国単位で横持ちへします。
+
+```{r}
+weo_2023 <- weo_long |>
+  filter(
+    year == 2023,
+    subject_code %in% c("PPPGDP", "PPPPC", "LP")
+  ) |>
+  select(iso, country, subject_code, value) |>
+  pivot_wider(
+    names_from = subject_code,
+    values_from = value
+  ) |>
+  inner_join(
+    group_map,
+    by = join_by(iso == iso3),
+    relationship = "many-to-one"
+  )
+```
+
+地域GDPは国別GDPを合計できます。一人当たりGDPは単純合計せず、GDP合計を人口`LP`の合計で割ります。
+
+```{r}
+weo_group_2023 <- weo_2023 |>
+  summarise(
+    countries = n(),
+    ppp_gdp_billion = sum(PPPGDP, na.rm = TRUE),
+    population_million = sum(LP, na.rm = TRUE),
+    ppp_per_capita = ppp_gdp_billion / population_million * 1000,
+    median_country_ppp_per_capita = median(PPPPC, na.rm = TRUE),
+    .by = group
+  )
+
+weo_group_2023
+```
+
+```{r}
+#| fig-cap: "G7・EU（G7除く）・ASEANの購買力平価GDP（2023年）"
+weo_group_2023 |>
+  mutate(group = fct_reorder(group, ppp_gdp_billion)) |>
+  ggplot(aes(x = group, y = ppp_gdp_billion)) +
+  geom_col() +
+  coord_flip() +
+  scale_y_continuous(
+    labels = scales::label_number(big.mark = ",")
+  ) +
+  labs(
+    x = NULL,
+    y = "購買力平価GDP（10億国際ドル）",
+    caption = "資料：IMF, World Economic Outlook Database, April 2025"
+  ) +
+  theme_minimal(base_family = "sans")
+```
+
+```{r}
+#| fig-cap: "G7・EU（G7除く）・ASEANの一人当たり購買力平価GDP（2023年）"
+weo_group_2023 |>
+  mutate(group = fct_reorder(group, ppp_per_capita)) |>
+  ggplot(aes(x = group, y = ppp_per_capita)) +
+  geom_col() +
+  coord_flip() +
+  scale_y_continuous(
+    labels = scales::label_dollar(
+      prefix = "",
+      suffix = " 国際ドル",
+      big.mark = ",",
+      accuracy = 1
+    )
+  ) +
+  labs(
+    x = NULL,
+    y = "人口加重した一人当たりGDP",
+    caption = "資料：IMF, World Economic Outlook Database, April 2025"
+  ) +
+  theme_minimal(base_family = "sans")
+```
+
+グループ対応表では、EUからG7加盟国を除いています。グループ定義は分析結果の一部なので、注記します。
+
+# ラベルと出所を整える
+
+報告用の図には、少なくとも次を含めます。
+
+- 軸名と単位
+- 対象期間
+- 季節調整・名目実質などの定義
+- データ加工上の重要な条件
+- 出所
+
+タイトルが長くなりすぎる場合は、本文で説明し、図には軸名と注記だけを置きます。
+
+# 図を保存する
+
+図をオブジェクトへ保存します。
+
+```{r}
+p_trade <- ggplot(
+  trade_long,
+  aes(x = date, y = value, linetype = series)
+) +
+  geom_line(linewidth = 0.7) +
+  scale_y_continuous(
+    labels = scales::label_number(scale = 1 / 1e6, suffix = "兆円")
+  ) +
+  labs(
+    x = NULL,
+    y = "通関額",
+    linetype = NULL,
+    caption = "資料：過去講義用の貿易統計スナップショット"
+  ) +
+  theme_minimal(base_family = "sans") +
+  theme(legend.position = "bottom")
+
+p_trade
+```
+
+```{r}
+ggsave(
+  filename = file.path("figures", "trade_exports_imports.png"),
+  plot = p_trade,
+  width = 10,
+  height = 5.5,
+  units = "in",
+  dpi = 300
+)
+```
+
+ベクター形式が必要ならPDFやSVGを使います。
+
+```{r}
+ggsave(
+  filename = file.path("figures", "trade_exports_imports.pdf"),
+  plot = p_trade,
+  width = 10,
+  height = 5.5,
+  units = "in"
+)
+```
+
+`plot = p_trade`を明示すると、最後に表示した別の図を誤って保存する事故を防げます。
+
+# 章末演習
+
+## 演習1：賃貸物件の説明図
+
+次の3枚を作成してください。
+
+1. 間取り別物件数の棒グラフ
+2. TX沿線区分別・主要間取り別の家賃箱ひげ図
+3. 面積と家賃の散布図。築年数をファセットにする
+
+すべてに軸名、単位、出所を付けます。
+
+::: {.callout-tip collapse="true"}
+## 解答例：散布図
+
+```{r}
+tx_plot <- tx_df |>
+  mutate(
+    age_group = factor(
+      age_group,
+      levels = c(
+        "築5年以下",
+        "築6～15年",
+        "築16～30年",
+        "築31年以上"
+      )
+    )
+  )
+
+ggplot(tx_plot, aes(x = size_sqm, y = monthly_rent, shape = line_group)) +
+  geom_point(alpha = 0.35) +
+  geom_smooth(method = "lm", se = FALSE) +
+  facet_wrap(~ age_group) +
+  coord_cartesian(xlim = c(0, quantile(tx_plot$size_sqm, 0.99))) +
+  labs(
+    x = "専有面積",
+    y = "月額家賃",
+    shape = "区分",
+    caption = "注：面積の99パーセンタイルまで表示。資料：過去講義用データ"
+  ) +
+  theme_minimal(base_family = "sans")
+```
+:::
+
+## 演習2：国際収支の図
+
+2015年以降について、経常収支、貿易収支、サービス収支、第一次所得収支を四半期合計へ変換し、ファセットで表示してください。未完了四半期は除外します。
+
+::: {.callout-tip collapse="true"}
+## 解答例
+
+```{r}
+bop_quarter_plot <- bop |>
+  filter(date >= as.Date("2015-01-01")) |>
+  mutate(quarter = floor_date(date, "quarter")) |>
+  summarise(
+    current_account = sum(current_account, na.rm = TRUE),
+    trade_balance = sum(trade_balance, na.rm = TRUE),
+    services_balance = sum(services_balance, na.rm = TRUE),
+    primary_income = sum(primary_income, na.rm = TRUE),
+    months = n(),
+    .by = quarter
+  ) |>
+  filter(months == 3) |>
+  select(-months) |>
+  pivot_longer(
+    cols = -quarter,
+    names_to = "component",
+    values_to = "value"
+  )
+
+ggplot(bop_quarter_plot, aes(x = quarter, y = value)) +
+  geom_col() +
+  geom_hline(yintercept = 0) +
+  facet_wrap(~ component, scales = "free_y", ncol = 1) +
+  labs(
+    x = NULL,
+    y = "四半期合計",
+    caption = "資料：財務省・日本銀行『国際収支統計』講義用データ"
+  ) +
+  theme_minimal(base_family = "sans")
+```
+:::
+
+## 演習3：2023年と2030年のWEO比較
+
+G7、EU（G7加盟国除く）、ASEANについて、購買力平価GDPを2023年と2030年で比較する図を作ってください。2030年が予測値であることを注記します。
+
+::: {.callout-tip collapse="true"}
+## 解答例
+
+```{r}
+weo_group_compare <- weo_long |>
+  filter(
+    subject_code == "PPPGDP",
+    year %in% c(2023, 2030)
+  ) |>
+  inner_join(
+    group_map,
+    by = join_by(iso == iso3),
+    relationship = "many-to-one"
+  ) |>
+  summarise(
+    ppp_gdp_billion = sum(value, na.rm = TRUE),
+    .by = c(group, year)
+  ) |>
+  mutate(year = factor(year))
+
+ggplot(
+  weo_group_compare,
+  aes(x = group, y = ppp_gdp_billion, fill = year)
+) +
+  geom_col(position = "dodge") +
+  coord_flip() +
+  labs(
+    x = NULL,
+    y = "購買力平価GDP（10億国際ドル）",
+    fill = "年",
+    caption = paste(
+      "注：2030年はIMF予測。EUはG7加盟国を除く。",
+      "資料：IMF WEO April 2025"
+    )
+  ) +
+  theme_minimal(base_family = "sans")
+```
+:::
+
+# 章末チェック
+
+- 図の目的と観測単位を説明できる。
+- 棒、ヒストグラム、箱ひげ、散布、折れ線を使い分けられる。
+- 軸の単位とデータ加工条件を注記している。
+- 二軸グラフに安易に頼らず、指数化やファセットを検討している。
+- ランキングと一人当たり指標の違いを説明できる。
+- 図をオブジェクトとして保存し、`ggsave()`で出力できる。

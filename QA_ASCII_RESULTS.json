@@ -1,0 +1,163 @@
+{
+  "checks": {
+    "ascii_filenames": {
+      "ok": true,
+      "bad": []
+    },
+    "ascii_excel_technical_names": {
+      "ok": true,
+      "bad": [],
+      "files": {
+        "analysis_data.xlsx": [
+          {
+            "sheet": "trade_query",
+            "rows": 88,
+            "cols": 23,
+            "nonascii_headers": []
+          },
+          {
+            "sheet": "trade",
+            "rows": 243,
+            "cols": 4,
+            "nonascii_headers": []
+          },
+          {
+            "sheet": "tx_data",
+            "rows": 1757,
+            "cols": 8,
+            "nonascii_headers": []
+          },
+          {
+            "sheet": "pharma_finance",
+            "rows": 50,
+            "cols": 7,
+            "nonascii_headers": []
+          },
+          {
+            "sheet": "pharma_patent",
+            "rows": 1800,
+            "cols": 3,
+            "nonascii_headers": []
+          },
+          {
+            "sheet": "bop",
+            "rows": 348,
+            "cols": 12,
+            "nonascii_headers": []
+          },
+          {
+            "sheet": "watcher_text",
+            "rows": 13,
+            "cols": 11,
+            "nonascii_headers": []
+          }
+        ],
+        "b_weo.xlsx": [
+          {
+            "sheet": "weo",
+            "rows": 8625,
+            "cols": 60,
+            "nonascii_headers": []
+          },
+          {
+            "sheet": "group_map",
+            "rows": 42,
+            "cols": 3,
+            "nonascii_headers": []
+          }
+        ],
+        "c_pref_gdp.xlsx": [
+          {
+            "sheet": "gdp",
+            "rows": 48,
+            "cols": 14,
+            "nonascii_headers": []
+          },
+          {
+            "sheet": "compensation",
+            "rows": 48,
+            "cols": 13,
+            "nonascii_headers": []
+          },
+          {
+            "sheet": "agri_forestry",
+            "rows": 50,
+            "cols": 5,
+            "nonascii_headers": []
+          }
+        ]
+      }
+    },
+    "ascii_csv_headers": {
+      "ok": true,
+      "bad": [],
+      "headers": {
+        "a_bop.csv": [
+          "year",
+          "month",
+          "current_account",
+          "goods_services_balance",
+          "trade_balance",
+          "exports",
+          "imports",
+          "services_balance",
+          "primary_income",
+          "secondary_income"
+        ],
+        "a_usdjpy.csv": [
+          "year",
+          "month",
+          "usd_jpy"
+        ]
+      }
+    },
+    "qmd_structure": {
+      "ok": true,
+      "issues": []
+    },
+    "unique_chunk_labels": {
+      "ok": true,
+      "duplicates": []
+    },
+    "ascii_r_identifiers": {
+      "ok": true,
+      "bad": []
+    },
+    "ascii_file_paths_in_qmd": {
+      "ok": true,
+      "bad": []
+    },
+    "ascii_sheet_references": {
+      "ok": true,
+      "bad": []
+    },
+    "exercise_doc_ascii_technical_terms": {
+      "ok": true,
+      "missing": []
+    }
+  },
+  "data": {
+    "bop": {
+      "rows": 351,
+      "first": [
+        1996,
+        1
+      ],
+      "last": [
+        2025,
+        3
+      ],
+      "min_trade_balance": [
+        2022,
+        10,
+        -20330.0
+      ]
+    },
+    "weo_2023_pppgdp_sums": {
+      "EU": 13553.257999999998,
+      "ASEAN": 11469.904,
+      "G7": 54338.781
+    }
+  },
+  "ok": true
+}

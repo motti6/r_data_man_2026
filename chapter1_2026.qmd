@@ -1,0 +1,463 @@
+---
+title: "第1章 Rと再現可能なデータ分析の基礎"
+subtitle: "実データから始めるRデータ操作入門（2026年度版）"
+author: ""
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-copy: true
+    code-overflow: wrap
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+## この章の到達目標
+
+この章を終えると、次のことができるようになります。
+
+1. R、Positron/RStudio、Quartoの役割を区別する。
+2. プロジェクトと相対パスを使って、別のPCでも再現できる分析を作る。
+3. オブジェクト、型、ベクトル、データフレーム、欠損値を説明する。
+4. 配布されたExcelの実データを読み込み、構造と品質を確認する。
+5. AIが生成したコードを、実行前後に点検する観点を持つ。
+
+## AI時代にRを学ぶ理由
+
+生成AIは、コードのたたき台を短時間で作れます。しかし、実務や研究で必要なのは「文字列としてのコード」ではなく、次の一連の判断です。
+
+- 何を一つの観測とするか。
+- 変数は何を測っているか。
+- 欠損値や外れ値をどう扱うか。
+- 集計や結合で行数が不自然に増えていないか。
+- 結果が元データと定義から説明できるか。
+
+Rを学ぶ目的は、すべての関数を暗記することではありません。**処理を読める、疑える、修正できる、再実行できる**状態を作ることです。
+
+::: {.callout-tip}
+## 授業でのAIの使い方
+
+AIには「答えだけ」ではなく、次を伝えて質問します。
+
+- データの列名と型
+- 目的と期待する完成形
+- 使ってよいパッケージ
+- エラー全文
+- 自分が確認したこと
+
+生成されたコードは、一行ずつ意味を説明できる範囲で使います。
+:::
+
+## R、IDE、Quartoの役割
+
+| 道具 | 主な役割 |
+|---|---|
+| R | 計算、データ加工、統計分析、可視化を実行する言語・環境 |
+| Positron / RStudio | Rコード、ファイル、図、ヘルプをまとめて扱うIDE |
+| Quarto | 説明文、コード、表、図を一つの文書として再現する仕組み |
+
+Quarto文書では、文章の途中にRコードを置けます。
+
+```{r}
+1 + 2
+```
+
+コードと結果を同じ資料に残すことで、「どの数値を、どの処理から作ったか」を追跡できます。
+
+## 初回セットアップ
+
+この教材のプロジェクト直下で、R Consoleから次を一度だけ実行します。
+
+```{r}
+#| eval: false
+source("setup_packages.R")
+```
+
+インストール後、Quartoのプレビューに必要な主要パッケージを確認します。
+
+```{r}
+#| eval: false
+c(
+  knitr = requireNamespace("knitr", quietly = TRUE),
+  rmarkdown = requireNamespace("rmarkdown", quietly = TRUE),
+  yaml = requireNamespace("yaml", quietly = TRUE),
+  readxl = requireNamespace("readxl", quietly = TRUE),
+  dplyr = requireNamespace("dplyr", quietly = TRUE)
+)
+```
+
+## プロジェクトと相対パス
+
+教材は次の構造を前提とします。
+
+```text
+r_data_course_2026/
+├─ chapter1_2026.qmd
+├─ chapter2_2026.qmd
+├─ ...
+├─ data_raw/       # 入手したままの原データ
+├─ data_clean/     # コードで整形したデータ
+├─ output_data/    # 表などの出力
+├─ figures/        # 図の出力
+└─ R/              # 再利用する関数
+```
+
+プロジェクトを開いたとき、次の相対パスは誰のPCでも同じ意味になります。
+
+```{r}
+#| eval: false
+analysis_path <- file.path("data_raw", "analysis_data.xlsx")
+```
+
+次のような絶対パスは、別の利用者や別のPCでは通常動きません。
+
+```{r}
+#| eval: false
+# 推奨しない例
+analysis_path <- "C:/Users/user_id/Desktop/analysis_data.xlsx"
+```
+
+::: {.callout-warning}
+## `setwd()`で無理に合わせない
+
+作業ディレクトリをコード内で個人のフォルダへ変更すると、他の人の環境で再現できません。プロジェクトを正しく開き、相対パスを使います。
+:::
+
+## この章で使う実データ
+
+`analysis_data.xlsx` の `tx_data` シートを読み込みます。ここから先のデータ分析例は、原則として配布された実データを使います。
+
+```{r}
+#| label: setup
+library(tidyverse)
+library(readxl)
+
+analysis_path <- file.path("data_raw", "analysis_data.xlsx")
+
+if (!file.exists(analysis_path)) {
+  stop("data_raw/analysis_data.xlsx が見つかりません。")
+}
+
+excel_sheets(analysis_path)
+```
+
+```{r}
+tx <- read_excel(analysis_path, sheet = "tx_data")
+
+tx
+```
+
+### まず構造を確認する
+
+データを読み込んだ直後は、いきなり分析せず、行数・列数・列名・型・欠損を確認します。
+
+```{r}
+dim(tx)
+names(tx)
+glimpse(tx)
+```
+
+```{r}
+colSums(is.na(tx))
+```
+
+このシートは、1行が1物件、列が物件名、家賃、間取り、広さ、築年数、階数、駅からの距離に相当する指標、`tx_indicator` などで構成されています。**単位や指標の厳密な定義は、分析前にデータ作成者の定義表で確認してください。** 値の大きさだけから単位を推測してはいけません。
+
+## オブジェクトと代入
+
+Rでは、値に名前を付けて保存します。
+
+```{r}
+number_of_properties <- nrow(tx)
+number_of_properties
+```
+
+代入には `<-` を使うのが一般的です。
+
+```{r}
+mean_rent <- mean(tx$monthly_rent, na.rm = TRUE)
+mean_rent
+```
+
+大文字と小文字は区別されます。
+
+```{r}
+#| error: true
+# mean_rent と Mean_Rent は別の名前
+Mean_Rent
+```
+
+## 基本的な型
+
+Rでよく使う型は次のとおりです。
+
+| 型 | 例 | 主な用途 |
+|---|---|---|
+| double / integer | `8.4`, `2021L` | 数量、金額、年 |
+| character | `"1LDK"` | 名称、コード、文章 |
+| logical | `TRUE`, `FALSE` | 条件判定 |
+| Date | `as.Date("2025-01-01")` | 日付 |
+| factor | 順序付きカテゴリ | 表示順やモデルの基準 |
+
+TXデータの型を個別に確認します。
+
+```{r}
+class(tx$monthly_rent)
+class(tx$layout)
+class(tx$tx_indicator)
+```
+
+`tx_indicator` が数値の0/1で保存されていても、分析上はカテゴリとして扱いたい場合があります。
+
+```{r}
+tx <- tx |>
+  mutate(
+    tx_group = factor(
+      tx_indicator,
+      levels = c(0, 1),
+      labels = c("indicator = 0", "indicator = 1")
+    )
+  )
+
+count(tx, tx_group)
+```
+
+## 基本的な演算
+
+### 四則演算
+
+```{r}
+10 + 3
+10 - 3
+10 * 3
+10 / 3
+10^2
+sqrt(100)
+log(100)
+exp(log(100))
+```
+
+### 列同士の演算
+
+物件ごとの「家賃を広さで割った値」を作ります。ここでは単位が未確認なので、`rent_per_size` という中立的な名称を使います。
+
+```{r}
+tx <- tx |>
+  mutate(rent_per_size = monthly_rent / size_sqm)
+
+select(tx, title, monthly_rent, size_sqm, rent_per_size) |>
+  slice_head(n = 5)
+```
+
+Rは各行について同じ計算を繰り返します。これをベクトル化と呼びます。
+
+## 条件式
+
+比較演算子は、データを抽出するときの基礎になります。
+
+| 演算子 | 意味 |
+|---|---|
+| `==` | 等しい |
+| `!=` | 等しくない |
+| `>`、`>=` | より大きい、以上 |
+| `<`、`<=` | より小さい、以下 |
+| `%in%` | 候補のいずれかに含まれる |
+| `&` | 両方を満たす |
+| `|` | どちらかを満たす |
+| `!` | 否定 |
+
+```{r}
+(tx$monthly_rent >= 10) |>
+  head()
+```
+
+```{r}
+sum(tx$size_sqm >= 50, na.rm = TRUE)
+```
+
+```{r}
+sum(
+  tx$layout %in% c("1LDK", "2LDK") & tx$minutes_to_station <= 10,
+  na.rm = TRUE
+)
+```
+
+::: {.callout-warning}
+## `=`と`==`を区別する
+
+- `x <- 3` または関数内の `na.rm = TRUE` は設定・代入。
+- `x == 3` は「等しいか」という比較。
+:::
+
+## ベクトルとデータフレーム
+
+一つの列はベクトルとして取り出せます。
+
+```{r}
+rent_vector <- tx$monthly_rent
+length(rent_vector)
+head(rent_vector)
+```
+
+行と列を番号で指定することもできますが、列名を使う方が読みやすく安全です。
+
+```{r}
+tx[1:3, 1:4]
+```
+
+```{r}
+select(tx, title, monthly_rent, layout, size_sqm) |>
+  slice_head(n = 3)
+```
+
+## 欠損値 `NA`
+
+欠損値は「0」ではなく、「観測されていない、利用できない、該当しない」などを表します。
+
+```{r}
+mean(c(5, 7, NA))
+mean(c(5, 7, NA), na.rm = TRUE)
+```
+
+`na.rm = TRUE` は欠損を除いて計算する指定ですが、常に正しいとは限りません。欠損が特定の地域、企業、期間に偏っていれば、除外後の平均は母集団を代表しなくなります。
+
+TXシートでは欠損数を次のように確認できます。
+
+```{r}
+tibble(
+  variable = names(tx),
+  missing_n = colSums(is.na(tx)),
+  missing_rate = colMeans(is.na(tx))
+)
+```
+
+## 関数を作る
+
+同じ処理を繰り返すときは、関数にします。
+
+```{r}
+safe_mean <- function(x) {
+  if (all(is.na(x))) return(NA_real_)
+  mean(x, na.rm = TRUE)
+}
+
+safe_mean(tx$monthly_rent)
+```
+
+関数名は、処理の目的が分かる名前にします。
+
+## エラーとヘルプ
+
+関数の使い方を確認するには、次を使います。
+
+```{r}
+#| eval: false
+?mean
+help("mean")
+example(mean)
+```
+
+エラーが出たら、まず次を確認します。
+
+1. ファイルパスが正しいか。
+2. 列名の大文字・小文字や全角・半角が一致しているか。
+3. パッケージを読み込んだか。
+4. 括弧、引用符、カンマが閉じているか。
+5. オブジェクトを作るコードを先に実行したか。
+
+## AIによるコードを点検する
+
+1. 入力ファイルとシート名は実在するか。
+2. 使用している列名はデータに存在するか。
+3. 欠損値をどう扱っているか。
+4. 行数は処理前後で想定どおりか。
+5. 出力値を元データの数行から手計算で確かめられるか。
+
+## 章末演習
+
+### 問1
+
+`tx_data`シートを読み込み、行数、列数、列名を確認してください。
+
+### 問2
+
+`monthly_rent`、`size_sqm`、`minutes_to_station` の平均・中央値・最小値・最大値を求めてください。欠損数も併記してください。
+
+### 問3
+
+次の条件を満たす物件数を求めてください。
+
+- `size_sqm` が50以上
+- `minutes_to_station` が10以下
+- `layout` が `1LDK` または `2LDK`
+
+### 問4
+
+`rent_per_size = m_rent / Size` を作り、最大値を持つ物件を確認してください。値の解釈に必要な追加情報も書いてください。
+
+::: {.callout-note collapse="true"}
+## 解答例
+
+```{r}
+# 問1
+tx_ex <- read_excel(analysis_path, sheet = "tx_data")
+dim(tx_ex)
+names(tx_ex)
+```
+
+```{r}
+# 問2
+tx_ex |>
+  summarise(
+    across(
+      c(monthly_rent, size_sqm, minutes_to_station),
+      list(
+        mean = ~ mean(.x, na.rm = TRUE),
+        median = ~ median(.x, na.rm = TRUE),
+        min = ~ min(.x, na.rm = TRUE),
+        max = ~ max(.x, na.rm = TRUE),
+        missing = ~ sum(is.na(.x))
+      )
+    )
+  )
+```
+
+```{r}
+# 問3
+tx_ex |>
+  filter(
+    size_sqm >= 50,
+    minutes_to_station <= 10,
+    layout %in% c("1LDK", "2LDK")
+  ) |>
+  summarise(n = n())
+```
+
+```{r}
+# 問4
+tx_ex |>
+  mutate(rent_per_size = monthly_rent / size_sqm) |>
+  slice_max(rent_per_size, n = 1, with_ties = TRUE) |>
+  select(title, monthly_rent, size_sqm, rent_per_size)
+```
+
+解釈には、`monthly_rent` と `size_sqm` の単位、共益費等を含むか、観測時点、同一物件の重複有無などが必要です。
+:::
+
+## 章末チェック
+
+- [ ] プロジェクトを開いて相対パスを使っている。
+- [ ] `data_raw` の原データを上書きしていない。
+- [ ] 読み込み直後に `dim()`、`names()`、`glimpse()`、欠損数を確認した。
+- [ ] 数値型とカテゴリ型の違いを説明できる。
+- [ ] `NA` を0と区別できる。
+- [ ] AI生成コードを列名、欠損、行数、定義から検証できる。
+
+## 参考資料
+
+- R for Data Science (2e): https://r4ds.hadley.nz/
+- Quarto Guide: https://quarto.org/docs/guide/
+- readxl: https://readxl.tidyverse.org/

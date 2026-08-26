@@ -1,0 +1,79 @@
+{
+  "non_ascii_paths": [],
+  "yaml": {
+    "chapter1_2026.qmd": "ok",
+    "chapter2_2026.qmd": "ok",
+    "chapter3_2026.qmd": "ok",
+    "chapter4_2026.qmd": "ok",
+    "chapter5_2026.qmd": "ok",
+    "chapter6_2026.qmd": "ok",
+    "chapter7_2026.qmd": "ok",
+    "chapter8_2026.qmd": "ok",
+    "index.qmd": "ok"
+  },
+  "pandoc": {
+    "chapter1_2026.qmd": {
+      "returncode": 0,
+      "stderr": ""
+    },
+    "chapter2_2026.qmd": {
+      "returncode": 0,
+      "stderr": ""
+    },
+    "chapter3_2026.qmd": {
+      "returncode": 0,
+      "stderr": ""
+    },
+    "chapter4_2026.qmd": {
+      "returncode": 0,
+      "stderr": ""
+    },
+    "chapter5_2026.qmd": {
+      "returncode": 0,
+      "stderr": ""
+    },
+    "chapter6_2026.qmd": {
+      "returncode": 0,
+      "stderr": ""
+    },
+    "chapter7_2026.qmd": {
+      "returncode": 0,
+      "stderr": ""
+    },
+    "chapter8_2026.qmd": {
+      "returncode": 0,
+      "stderr": ""
+    },
+    "index.qmd": {
+      "returncode": 0,
+      "stderr": ""
+    }
+  },
+  "duplicate_chunk_labels_global": {},
+  "missing_expected": [],
+  "app_ui_outputs": [
+    "map",
+    "map_title",
+    "profile_text",
+    "ranking_plot",
+    "ranking_table",
+    "selected_rank",
+    "selected_station_count",
+    "selected_value",
+    "selected_yoy",
+    "trend_plot"
+  ],
+  "app_server_outputs": [
+    "map",
+    "map_title",
+    "profile_text",
+    "ranking_plot",
+    "ranking_table",
+    "selected_rank",
+    "selected_station_count",
+    "selected_value",
+    "selected_yoy",
+    "trend_plot"
+  ],
+  "issues": []
+}

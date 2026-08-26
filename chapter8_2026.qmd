@@ -1,0 +1,1089 @@
+---
+title: "第8章 Shinyで地図ダッシュボードを作る"
+subtitle: "第2章・第6章・第7章のデータを一つの対話型アプリへ統合する"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-copy: true
+    code-overflow: wrap
+execute:
+  echo: true
+  eval: false
+  warning: false
+  message: false
+---
+
+# この章の位置づけ
+
+第8章では、第7章で作成した空間データと、第6章までに扱った県民経済計算・人口・農林業データを組み合わせ、**関東の地域経済・鉄道ダッシュボード**を作ります。
+
+完成アプリでは、次の操作が連動します。
+
+- 年を選ぶと、都県別のGDP・雇用者報酬・比率が更新される。
+- 指標を選ぶと、塗り分け地図、順位、KPIが更新される。
+- 都県を選ぶと、時系列、農林業シェア、人口、一人当たりGDPが更新される。
+- 駅の乗降客数しきい値を変えると、地図上の駅と駅数KPIが更新される。
+- 地図上の都県をクリックすると、選択欄も更新される。
+
+```{mermaid}
+flowchart LR
+  A[入力<br/>年・指標・都県・駅しきい値] --> B[reactive data]
+  B --> C[Leaflet地図]
+  B --> D[KPI]
+  B --> E[時系列グラフ]
+  B --> F[ランキング]
+  C -->|地図クリック| A
+```
+
+## 到達目標
+
+1.  Shinyの`ui`、`server`、リアクティブグラフを説明する。
+2.  重いデータ処理と画面更新処理を分離する。
+3.  `reactive()`で再利用可能な中間データを作る。
+4.  `renderLeaflet()`と`leafletProxy()`を使い分ける。
+5.  入力、地図クリック、KPI、グラフ、表を同期する。
+6.  データの基準年・定義・欠損をUI上でも明示する。
+7.  AIが生成したShinyコードを、依存関係と検算の観点からレビューする。
+
+::: callout-important
+## この章の評価対象
+
+「画面が動く」だけでは不十分です。データ読込の位置、リアクティブ依存関係、欠損時の動作、基準年の表示、出所、再現性まで含めてアプリを評価します。
+:::
+
+# 準備
+
+## 必要ファイル
+
+第7章を完了し、次のファイルがあることを確認します。
+
+``` text
+data_clean/kanto_dashboard_data.rds
+```
+
+R Consoleで確認します。
+
+```{r}
+bundle_path <- file.path("data_clean", "kanto_dashboard_data.rds")
+file.exists(bundle_path)
+```
+
+`FALSE`の場合は、第7章の最後で次を実行します。
+
+```{r}
+source(file.path("R", "build_kanto_dashboard_data.R"))
+build_kanto_dashboard_data()
+```
+
+第2章のAPI演習で`data_clean/pref_population_2020.csv`を作ってから再構築すると、人口と一人当たりGDPもアプリに表示されます。人口ファイルがなくてもアプリ本体は動きます。
+
+## アプリのフォルダ
+
+この教材には2つのアプリを同梱しています。
+
+``` text
+apps/
+  kanto_dashboard_starter/
+    app.R
+  kanto_dashboard/
+    app.R
+```
+
+- `kanto_dashboard_starter`：授業中に機能を追加する開始版
+- `kanto_dashboard`：完成例
+
+スターターを起動します。
+
+```{r}
+shiny::runApp(file.path("apps", "kanto_dashboard_starter"))
+```
+
+完成例は次で起動します。
+
+```{r}
+shiny::runApp(file.path("apps", "kanto_dashboard"))
+```
+
+::: callout-tip
+## Positronでの起動
+
+`apps/kanto_dashboard_starter/app.R`を開き、Run Appを実行しても構いません。アプリの作業ディレクトリがアプリフォルダになるため、本教材ではプロジェクト直下を`../..`から求めています。
+:::
+
+# Shinyの基本構造
+
+最小のShinyアプリは、`ui`、`server`、`shinyApp()`から成ります。
+
+```{r}
+library(shiny)
+
+ui <- fluidPage(
+  sliderInput("n", "観測数", min = 10, max = 1000, value = 100),
+  plotOutput("histogram")
+)
+
+server <- function(input, output, session) {
+  output$histogram <- renderPlot({
+    hist(rnorm(input$n))
+  })
+}
+
+shinyApp(ui, server)
+```
+
+- `input$n`：ユーザーの入力値
+- `output$histogram`：画面へ返す出力
+- `renderPlot()`：出力を作る処理
+- `plotOutput()`：出力を置くUI領域
+
+## リアクティブグラフとして考える
+
+Shinyでは、コードを上から一度だけ実行するのではなく、入力が変わったときに必要な部分だけが再計算されます。
+
+```{mermaid}
+flowchart TD
+  Y[input year] --> M[map_data]
+  K[input metric] --> M
+  P[input pref_code] --> M
+  M --> MAP[map]
+  M --> RANK[ranking_data]
+  RANK --> KPI[value / rank]
+  RANK --> PLOT[ranking plot]
+  P --> TREND[time-series plot]
+```
+
+`reactive()`で作った中間結果は、依存する入力が変わらない限り再計算結果がキャッシュされます。複数の出力で同じ加工を繰り返すより、共通のリアクティブデータを作る方が安全です。
+
+# データをどこで読むか
+
+## 不変データは`server`の外で一度だけ読む
+
+完成アプリの冒頭では、RDSを`server`の外で読みます。
+
+```{r}
+library(shiny)
+library(bslib)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(sf)
+library(leaflet)
+library(DT)
+library(scales)
+
+project_dir <- normalizePath(
+  file.path(getwd(), "..", ".."),
+  winslash = "/",
+  mustWork = TRUE
+)
+
+data_path <- file.path(
+  project_dir,
+  "data_clean",
+  "kanto_dashboard_data.rds"
+)
+
+bundle <- readRDS(data_path)
+pref_geometry <- bundle$pref_geometry
+pref_panel <- bundle$pref_panel
+pref_agri <- bundle$pref_agri
+pref_profile <- bundle$pref_profile
+station_points <- bundle$station_points
+```
+
+この位置のコードは、アプリのRプロセス起動時に一度実行されます。ユーザーが年を変えるたびにExcel、shapefile、APIを読み直す設計にはしません。
+
+::: callout-warning
+## APIをリアクティブ処理の中で毎回呼ばない
+
+API障害、通信遅延、回数制限、レスポンス変更がアプリ操作へ直結します。更新ボタンを設ける場合でも、取得・検証・保存を別処理にし、通常画面は検証済みスナップショットを読みます。
+:::
+
+## RDSの中身を監査する
+
+```{r}
+tibble(
+  object = names(bundle),
+  class = map_chr(bundle, ~ paste(class(.x), collapse = "/")),
+  rows = map_int(bundle, ~ if (is.data.frame(.x)) nrow(.x) else NA_integer_)
+)
+```
+
+最低限、次を確認します。
+
+- `pref_geometry`が7行の`sf`である。
+- `pref_panel`のキーが`code × year`で一意である。
+- `station_points`がpoint geometryである。
+- 経済指標は2011～2021年、駅データは2024年度である。
+
+# UIを情報階層から設計する
+
+## 先に「誰が何を知りたいか」を決める
+
+このアプリの利用者を、関東の地域経済を概観する政策・調査担当者と想定します。
+
+| 優先度 | 問い                   | UI部品                   |
+|--------|------------------------|--------------------------|
+| 1      | どの都県が大きいか     | 塗り分け地図、ランキング |
+| 2      | 選択都県の水準・順位は | value box                |
+| 3      | 時系列でどう変化したか | 折れ線グラフ             |
+| 4      | 駅の分布と規模は       | 円マーカー、しきい値     |
+| 5      | 背景属性は             | 人口、農林業シェア、注記 |
+
+「作れる部品を並べる」のではなく、問いの優先度からレイアウトを決めます。
+
+## `bslib`でダッシュボード骨格を作る
+
+```{r}
+ui <- page_sidebar(
+  title = "関東の地域経済・鉄道ダッシュボード",
+  theme = bs_theme(
+    version = 5,
+    bootswatch = "flatly",
+    primary = "#2166ac",
+    secondary = "#5ab4ac"
+  ),
+  sidebar = sidebar(
+    selectInput("year", "地図の年", choices = 2011:2021),
+    selectInput(
+      "metric",
+      "地図の指標",
+      choices = c(
+        "県内総生産" = "gdp",
+        "雇用者報酬" = "compensation",
+        "雇用者報酬 / GDP" = "compensation_to_gdp"
+      )
+    ),
+    selectInput("pref_code", "選択する都県", choices = NULL),
+    sliderInput(
+      "min_passengers",
+      "表示する駅の最小乗降客数（人 / 日）",
+      min = 0,
+      max = 100000,
+      value = 20000,
+      step = 5000
+    ),
+    checkboxInput("show_stations", "駅を表示する", value = TRUE),
+    checkboxInput(
+      "fixed_scale",
+      "年をまたいで色尺度を固定する",
+      value = TRUE
+    )
+  )
+)
+```
+
+技術的なIDは`year`、`metric`などASCIIで統一し、画面に見せるラベルは日本語にします。
+
+## value boxを置く
+
+```{r}
+layout_columns(
+  col_widths = c(3, 3, 3, 3),
+  value_box(
+    title = "選択値",
+    value = textOutput("selected_value", inline = TRUE),
+    showcase = icon("chart-bar"),
+    theme = "primary"
+  ),
+  value_box(
+    title = "関東内順位",
+    value = textOutput("selected_rank", inline = TRUE),
+    showcase = icon("trophy"),
+    theme = "info"
+  ),
+  value_box(
+    title = "前年比",
+    value = textOutput("selected_yoy", inline = TRUE),
+    showcase = icon("arrow-up"),
+    theme = "success"
+  ),
+  value_box(
+    title = "条件を満たす駅数",
+    value = textOutput("selected_station_count", inline = TRUE),
+    showcase = icon("train"),
+    theme = "warning"
+  )
+)
+```
+
+KPIは「大きい数字を置く場所」ではなく、現在の選択条件を短時間で確認する場所です。単位、年、母集団が曖昧なKPIは誤解を生みます。
+
+# 入力候補をデータから作る
+
+ハードコードではなく、RDSの中身から選択肢を作ります。
+
+```{r}
+pref_choices <- stats::setNames(
+  pref_geometry$code,
+  pref_geometry$pref
+)
+
+year_choices <- sort(unique(pref_panel$year))
+
+metric_spec <- tibble::tribble(
+  ~metric, ~label, ~short_label, ~unit, ~palette,
+  "gdp", "県内総生産", "GDP", "百万円", "Blues",
+  "compensation", "雇用者報酬", "雇用者報酬", "百万円", "Greens",
+  "compensation_to_gdp", "雇用者報酬 / GDP", "雇用者報酬比率", "％", "Purples"
+)
+
+metric_choices <- stats::setNames(
+  metric_spec$metric,
+  metric_spec$label
+)
+```
+
+`metric_spec`へラベル、単位、パレットをまとめると、条件分岐を複数箇所へ散らさずに済みます。
+
+# 共通のリアクティブデータを作る
+
+## 選択中の指標定義
+
+```{r}
+selected_spec <- reactive({
+  metric_spec |>
+    filter(metric == input$metric) |>
+    slice(1)
+})
+```
+
+## 地図用データ
+
+```{r}
+map_data <- reactive({
+  req(input$year, input$metric, input$pref_code)
+
+  panel_year <- pref_panel |>
+    filter(year == as.integer(input$year))
+
+  result <- pref_geometry |>
+    left_join(
+      panel_year,
+      by = join_by(code, pref),
+      relationship = "one-to-one"
+    )
+
+  result$map_value <- result[[input$metric]]
+  result$border_weight <- ifelse(
+    result$code == input$pref_code,
+    4,
+    1
+  )
+
+  result
+})
+```
+
+ここでは、地図のgeometry、選択年の経済指標、選択中の境界線強調を一つにまとめています。
+
+::: callout-tip
+## 動的列選択
+
+`result[[input$metric]]`は、入力文字列に対応する列をベクトルとして取り出します。`aes(fill = input$metric)`と書くと文字列そのものを色へ割り当てることがあるため、動的列指定の仕組みを理解してください。
+:::
+
+## ランキングと選択行
+
+```{r}
+ranking_data <- reactive({
+  map_data() |>
+    st_drop_geometry() |>
+    arrange(desc(map_value)) |>
+    mutate(rank = row_number())
+})
+
+selected_row <- reactive({
+  ranking_data() |>
+    filter(code == input$pref_code) |>
+    slice(1)
+})
+```
+
+同じ順位計算をKPI、グラフ、表で繰り返さず、`ranking_data()`を共有します。
+
+## 駅のフィルター
+
+```{r}
+filtered_stations <- reactive({
+  station_points |>
+    filter(passengers_2024 >= input$min_passengers) |>
+    mutate(
+      marker_radius = pmax(
+        3,
+        pmin(13, sqrt(passengers_2024) / 45)
+      )
+    )
+})
+```
+
+乗降客数をそのまま半径にすると、最大駅が画面を覆います。平方根変換と上下限を使い、面積感覚と視認性を調整します。
+
+# Leaflet地図を効率的に更新する
+
+## 地図本体は一度だけ作る
+
+```{r}
+output$map <- renderLeaflet({
+  bbox <- st_bbox(pref_geometry)
+
+  leaflet(options = leafletOptions(preferCanvas = TRUE)) |>
+    addProviderTiles(providers$CartoDB.Positron) |>
+    fitBounds(
+      lng1 = bbox[["xmin"]],
+      lat1 = bbox[["ymin"]],
+      lng2 = bbox[["xmax"]],
+      lat2 = bbox[["ymax"]]
+    )
+})
+```
+
+## `leafletProxy()`でレイヤーだけ更新する
+
+```{r}
+observe({
+  current_map <- map_data()
+  spec <- selected_spec()
+
+  palette_domain <- if (isTRUE(input$fixed_scale)) {
+    pref_panel[[input$metric]]
+  } else {
+    current_map$map_value
+  }
+
+  palette <- colorNumeric(
+    palette = spec$palette,
+    domain = palette_domain,
+    na.color = "#d9d9d9"
+  )
+
+  leafletProxy("map", data = current_map) |>
+    clearGroup("prefectures") |>
+    clearControls() |>
+    addPolygons(
+      group = "prefectures",
+      layerId = ~ code,
+      fillColor = ~ palette(map_value),
+      fillOpacity = 0.78,
+      color = "#ffffff",
+      weight = ~ border_weight,
+      label = ~ pref,
+      highlightOptions = highlightOptions(
+        weight = 4,
+        color = "#222222",
+        bringToFront = TRUE
+      )
+    ) |>
+    addLegend(
+      position = "bottomright",
+      pal = palette,
+      values = ~ map_value,
+      title = paste0(spec$short_label, " (", input$year, ")")
+    )
+})
+```
+
+`renderLeaflet()`で地図全体を毎回作り直すと、ズームや表示状態もリセットされます。`leafletProxy()`は既存の地図へ差分を送るため、操作感が安定します。
+
+色尺度を年ごとに作り直すと、同じ色が別の年では別の値を表します。完成例では「年をまたいで色尺度を固定する」を初期値`TRUE`とし、時系列比較時の読み違いを防ぎます。年内の差を強調したい場合だけOFFにします。
+
+## 駅レイヤーを独立して更新する
+
+```{r}
+observe({
+  proxy <- leafletProxy("map") |>
+    clearGroup("stations")
+
+  if (isTRUE(input$show_stations)) {
+    proxy |>
+      addCircleMarkers(
+        data = filtered_stations(),
+        group = "stations",
+        radius = ~ marker_radius,
+        color = "#8c2d04",
+        fillColor = "#fe9929",
+        fillOpacity = 0.75,
+        label = ~ station_name
+      )
+  }
+})
+```
+
+都県ポリゴンの更新と駅の更新を分けると、依存する入力も分かれます。
+
+# 地図クリックと入力欄を同期する
+
+`layerId = ~ code`を付けたポリゴンをクリックすると、`input$map_shape_click$id`へ都県コードが入ります。
+
+```{r}
+observeEvent(input$map_shape_click, {
+  clicked_code <- input$map_shape_click$id
+
+  if (!is.null(clicked_code) && clicked_code %in% pref_geometry$code) {
+    updateSelectInput(
+      session,
+      "pref_code",
+      selected = clicked_code
+    )
+  }
+})
+```
+
+この処理により、地図とプルダウンが同じ状態を表します。
+
+::: callout-warning
+## 更新ループに注意
+
+入力Aの変更で入力Bを更新し、入力Bの変更で入力Aを更新すると、無限に更新し合う設計になることがあります。入力の「唯一の状態源」を意識し、必要なら`ignoreInit`、`freezeReactiveValue()`、条件分岐を使います。
+:::
+
+# KPIを作る
+
+## 選択値と順位
+
+```{r}
+output$selected_value <- renderText({
+  row <- selected_row()
+  req(nrow(row) == 1)
+
+  if (input$metric == "compensation_to_gdp") {
+    label_percent(accuracy = 0.1)(row$map_value)
+  } else {
+    label_number(big.mark = ",", accuracy = 1)(row$map_value)
+  }
+})
+
+output$selected_rank <- renderText({
+  row <- selected_row()
+  req(nrow(row) == 1)
+  paste0(row$rank, " / ", nrow(ranking_data()))
+})
+```
+
+## 前年比
+
+```{r}
+previous_value <- reactive({
+  pref_panel |>
+    filter(
+      code == input$pref_code,
+      year == as.integer(input$year) - 1L
+    ) |>
+    pull(all_of(input$metric)) |>
+    dplyr::first(default = NA_real_)
+})
+
+output$selected_yoy <- renderText({
+  current <- selected_row()$map_value
+  previous <- previous_value()
+
+  if (is.na(previous) || previous == 0) {
+    return("NA")
+  }
+
+  label_percent(accuracy = 0.1)(current / previous - 1)
+})
+```
+
+最初の年は前年値がないため`NA`です。エラーを隠すために0へ置換しません。
+
+## 条件を満たす駅数
+
+```{r}
+output$selected_station_count <- renderText({
+  station_count <- filtered_stations() |>
+    filter(pref_code == input$pref_code) |>
+    nrow()
+
+  label_number(big.mark = ",", accuracy = 1)(station_count)
+})
+```
+
+このKPIは、しきい値を変えると更新されます。全駅数とは異なるため、タイトルを「駅数」ではなく「条件を満たす駅数」としています。
+
+# 時系列・ランキング・表を連動させる
+
+## 選択都県の時系列
+
+```{r}
+output$trend_plot <- renderPlot({
+  trend <- pref_panel |>
+    filter(code == input$pref_code) |>
+    select(year, gdp, compensation) |>
+    pivot_longer(
+      cols = c(gdp, compensation),
+      names_to = "series",
+      values_to = "value"
+    ) |>
+    mutate(
+      series = recode(
+        series,
+        gdp = "県内総生産",
+        compensation = "雇用者報酬"
+      )
+    )
+
+  ggplot(trend, aes(x = year, y = value, color = series)) +
+    geom_line(linewidth = 1.1) +
+    geom_point(size = 2) +
+    scale_y_continuous(labels = label_number(big.mark = ",")) +
+    labs(x = NULL, y = "百万円", color = NULL) +
+    theme_minimal(base_size = 12) +
+    theme(legend.position = "bottom")
+})
+```
+
+## ランキンググラフ
+
+```{r}
+output$ranking_plot <- renderPlot({
+  plot_data <- ranking_data() |>
+    mutate(selected = code == input$pref_code)
+
+  ggplot(
+    plot_data,
+    aes(
+      x = reorder(pref, map_value),
+      y = map_value,
+      fill = selected
+    )
+  ) +
+    geom_col() +
+    coord_flip() +
+    scale_fill_manual(
+      values = c(`FALSE` = "#bdbdbd", `TRUE` = "#2166ac"),
+      guide = "none"
+    ) +
+    labs(x = NULL, y = selected_spec()$unit) +
+    theme_minimal(base_size = 12)
+})
+```
+
+選択中の都県だけ色を変え、地図・プルダウン・ランキングの状態を一致させます。
+
+## `DT`による表
+
+```{r}
+output$ranking_table <- renderDT({
+  table_data <- ranking_data() |>
+    transmute(
+      rank,
+      prefecture = pref,
+      value = map_value
+    )
+
+  datatable(
+    table_data,
+    rownames = FALSE,
+    selection = "none",
+    options = list(
+      pageLength = 7,
+      lengthChange = FALSE,
+      searching = FALSE,
+      ordering = FALSE,
+      dom = "t"
+    )
+  )
+})
+```
+
+表はグラフの代替ではなく、正確な数値を確認する役割を持ちます。
+
+# 第2章・第6章の背景属性を表示する
+
+選択都県について、次を文章で表示します。
+
+- 第2章のe-Stat API：2020年人口
+- 第6章C：2020年一人当たりGDP
+- 第6章C：2021年農林業シェア
+- 第7章：2024年度の駅数
+
+```{r}
+output$profile_text <- renderUI({
+  profile_row <- pref_profile |>
+    filter(code == input$pref_code) |>
+    slice(1)
+
+  agri_row <- pref_agri |>
+    filter(code == input$pref_code, year == 2021) |>
+    slice(1)
+
+  station_total <- station_points |>
+    filter(pref_code == input$pref_code) |>
+    nrow()
+
+  tagList(
+    p(strong(selected_row()$pref)),
+    p(
+      paste0(
+        "2020年人口：",
+        format(profile_row$population_2020, big.mark = ","),
+        "人"
+      )
+    ),
+    p(
+      paste0(
+        "2021年農林業シェア：",
+        label_percent(accuracy = 0.1)(agri_row$agri_forestry_share)
+      )
+    ),
+    p(
+      paste0(
+        "2024年度の乗降客数が収録されている駅：",
+        format(station_total, big.mark = ",")
+      )
+    )
+  )
+})
+```
+
+完成例では、人口ファイルがない場合もエラーにならず、「API取得結果なし」と表示する分岐を入れています。
+
+::: callout-important
+## 時点の違いを隠さない
+
+人口は2020年、GDP・農林業は2020年または2021年、駅は2024年度です。UI上で年を明記し、同一年の横断比較や因果分析であるかのように見せないでください。
+:::
+
+# 完成アプリのコードを読む
+
+完成版は次にあります。
+
+``` text
+apps/kanto_dashboard/app.R
+```
+
+最初から全文を写すのではなく、次の順序でレビューします。
+
+1.  パッケージとデータ読込
+2.  UIの入力・出力ID
+3.  `reactive()`の依存関係
+4.  `render*()`と対応する`*Output()`
+5.  `observe()`と`observeEvent()`の副作用
+6.  欠損・空データ・最初の年の処理
+7.  出所と基準年の表示
+
+```{r}
+file.show(file.path("apps", "kanto_dashboard", "app.R"))
+```
+
+# デバッグ方法
+
+## IDの対応を確認する
+
+次が一致している必要があります。
+
+``` text
+leafletOutput("map")       <-> output$map
+plotOutput("trend_plot")  <-> output$trend_plot
+selectInput("year", ...)  <-> input$year
+```
+
+## `req()`と`validate()`を使う
+
+```{r}
+output$ranking_plot <- renderPlot({
+  req(input$year, input$metric)
+
+  validate(
+    need(nrow(ranking_data()) > 0, "表示できるデータがありません。")
+  )
+
+  # plot code
+})
+```
+
+`req()`は必要入力が揃うまで処理を止め、`validate()`は利用者向けメッセージを表示します。
+
+## 中間データをコンソールへ出す
+
+```{r}
+observeEvent(input$metric, {
+  message(
+    "metric=", input$metric,
+    ", year=", input$year,
+    ", rows=", nrow(map_data())
+  )
+})
+```
+
+本番では過剰なログを減らしますが、開発中は入力と行数を確認します。
+
+## リアクティブログを使う
+
+```{r}
+options(shiny.reactlog = TRUE)
+shiny::runApp(file.path("apps", "kanto_dashboard"))
+```
+
+アプリ上で`Ctrl + F3`を押すと、リアクティブ依存関係を確認できます。環境によってショートカットが異なる場合は、Shinyのreactlogドキュメントを確認してください。
+
+# 性能と再現性
+
+## 本教材で行った軽量化
+
+- 市区町村ポリゴンを都県へdissolve
+- 表示geometryを関東本土へcrop
+- 投影座標系で境界をsimplify
+- 駅lineを駅グループごとのpointへ集約
+- Excelと空間データを事前結合
+- RDSへ保存
+- アプリ起動時に一度だけ読込
+- `leafletProxy()`で差分更新
+
+## 反応が遅いときの診断順
+
+1.  入力変更時に何が再計算されているか。
+2.  `reactive()`の中でファイル読込・API取得をしていないか。
+3.  ブラウザへ送るgeometryの頂点数が多すぎないか。
+4.  数万点を一度に描いていないか。
+5.  同じ`left_join()`や`arrange()`を複数出力で繰り返していないか。
+6.  不要な列・geometryを保持していないか。
+
+## データ更新の流れ
+
+```{mermaid}
+flowchart LR
+  A[公表元から新データ取得] --> B[data_rawへ保存]
+  B --> C[build_kanto_dashboard_data]
+  C --> D[検算]
+  D --> E[kanto_dashboard_data.rds]
+  E --> F[Shiny起動]
+```
+
+アプリ内で原データを直接加工するのではなく、ビルド処理を再実行してRDSを差し替えます。
+
+# 章末演習
+
+## 演習1：スターターへ塗り分けを追加する
+
+`apps/kanto_dashboard_starter/app.R`へ次を追加します。
+
+1.  指標選択`metric`
+2.  `map_data()`の`map_value`
+3.  `colorNumeric()`
+4.  凡例
+5.  選択都県の境界強調
+
+完成条件：年・指標・都県を変えたとき、地図が正しく更新される。
+
+## 演習2：KPIを3つ作る
+
+次を表示します。
+
+- 選択値
+- 関東内順位
+- 前年比
+
+最初の年、欠損値、0除算の場合にアプリが停止しないようにします。
+
+## 演習3：駅レイヤーを追加する
+
+1.  駅表示のON/OFF
+2.  乗降客数しきい値
+3.  マーカー半径
+4.  駅名・路線・乗降客数のラベル
+5.  選択都県の条件該当駅数
+
+しきい値を0、最大付近へ動かし、空データでも動くか確認します。
+
+## 演習4：地図クリックを同期する
+
+地図上で都県をクリックしたとき、次が同時に更新されるようにします。
+
+- 都県プルダウン
+- KPI
+- 時系列
+- ランキングの強調
+- 背景属性
+
+## 演習5：基準年の違いをUIへ組み込む
+
+利用者が誤解しないよう、次を画面へ明記します。
+
+- 経済データ：2011～2021年
+- 人口：2020年
+- 駅別乗降客数：2024年度
+- 行政区域：2026年1月1日
+
+「出所と注意」のカードを作り、単なる脚注ではなく常時確認できるようにします。
+
+# 発展演習
+
+## ダウンロード機能
+
+選択年・指標のランキング表をCSVとして保存できるようにします。
+
+```{r}
+downloadButton("download_ranking", "ランキングをCSVで保存")
+
+output$download_ranking <- downloadHandler(
+  filename = function() {
+    paste0(
+      "kanto_ranking_",
+      input$metric,
+      "_",
+      input$year,
+      ".csv"
+    )
+  },
+  content = function(file) {
+    readr::write_csv(
+      ranking_data() |>
+        st_drop_geometry(),
+      file
+    )
+  }
+)
+```
+
+## URLまたはブックマークで状態を共有する
+
+利用者が同じ年・指標・都県を再現できるよう、Shinyのbookmarkingを調べます。共有URLへ個人情報やAPIキーを含めないでください。
+
+## モジュールへ分割する
+
+アプリが大きくなったら、次へ分けます。
+
+``` text
+R/
+  mod_map.R
+  mod_kpi.R
+  mod_ranking.R
+  mod_profile.R
+```
+
+入力・出力IDの名前空間を使い、テスト可能な小単位へ分割します。
+
+## 別データを追加する
+
+次のいずれかを地図へ追加します。
+
+- 第7章で取得した地価公示
+- e-Statの人口・世帯
+- 医療機関または学校
+- 災害リスク区域
+- 第6章の農林業シェアを塗り分け指標へ追加
+
+単にレイヤーを増やすのではなく、利用者の問いと凡例の読みやすさを説明します。
+
+## 世界版WEOダッシュボード
+
+第6章Bの`weo_panel`と世界の国境データをISO3コードで結合し、次を作ります。
+
+- 2023年・2030年のPPP GDP地図
+- 国をクリックした時系列
+- G7・EU・ASEANフィルター
+- 実績・予測境界の表示
+
+2030年は予測であることを、地図タイトルと注記へ明示します。
+
+# AIを使ったShiny開発のルール
+
+AIはUI部品やリアクティブコードの雛形作成に有効です。ただし、次を自分で確認します。
+
+| 確認項目 | 質問                                     |
+|----------|------------------------------------------|
+| 入力     | `input`のIDはUIと一致しているか          |
+| 出力     | `output`と`*Output()`は対応しているか    |
+| 依存     | どの入力変更でどの処理が再実行されるか   |
+| データ   | 行数、キー、単位、基準年は正しいか       |
+| 欠損     | `NA`を0へ変えていないか                  |
+| 地理     | CRS、空間述語、境界上の点は妥当か        |
+| 性能     | 重い処理を`server`内で繰り返していないか |
+| 責任     | 誤解を招く表示・因果表現になっていないか |
+
+AIへ質問する場合は、最低限次を渡します。
+
+``` text
+- app directory structure
+- object names and column names
+- one row's observational unit
+- desired input/output IDs
+- which calculations should be reactive
+- expected behavior for missing data
+- data years and units
+```
+
+::: callout-important
+## 「動いた」は検算ではない
+
+年を2011年と2021年へ変える、都県を全て選ぶ、駅しきい値を0と最大へ動かす、駅表示をOFFにする、人口ファイルを一時的に外す、といった境界条件を試します。
+:::
+
+# 提出課題
+
+完成例をそのまま提出するのではなく、**意思決定上の問いを一つ追加**します。
+
+例：
+
+- 経済規模の割に大規模駅が多い都県はどこか。
+- 雇用者報酬比率と駅密度はどのように並ぶか。
+- 人口規模を考慮すると、GDP順位はどう変わるか。
+- 地価・医療・災害リスクを加えると、地域評価はどう変わるか。
+
+## 提出物
+
+1.  アプリフォルダ一式
+2.  追加した問いと対象利用者の説明
+3.  データフロー図
+4.  入力と出力の一覧
+5.  検算記録
+6.  データ出所・基準年・加工内容
+7.  画面キャプチャ
+8.  300～500字の解釈と限界
+
+## 評価基準
+
+| 観点                           | 配点の目安 |
+|--------------------------------|-----------:|
+| 問いとUIの整合性               |         15 |
+| リアクティブ設計               |         20 |
+| 地図・表・グラフの連動         |         20 |
+| データ定義・基準年・欠損の扱い |         20 |
+| 性能と再現性                   |         15 |
+| 解釈・限界・出所               |         10 |
+
+# 完成例の起動と比較
+
+自分の実装を終えた後で、完成例と比較します。
+
+```{r}
+shiny::runApp(file.path("apps", "kanto_dashboard"))
+```
+
+比較する際は、見た目だけでなく次を確認します。
+
+- RDSをどこで読むか。
+- `map_data()`を何が無効化するか。
+- 地図本体とレイヤー更新を分けているか。
+- 選択状態が複数部品で一致しているか。
+- 値の書式が指標ごとに変わるか。
+- データがない場合にどう表示するか。
+- 出所と基準年が画面上に残るか。
+
+# 章末チェック
+
+- [ ] `ui`、`server`、`shinyApp()`の役割を説明できる。
+- [ ] 不変データを`server`の外で一度だけ読んだ。
+- [ ] 共通加工を`reactive()`へまとめた。
+- [ ] `renderLeaflet()`と`leafletProxy()`を使い分けた。
+- [ ] 年をまたぐ色尺度を固定するか、意図を説明できる。
+- [ ] 地図クリックと都県選択を同期した。
+- [ ] KPI、時系列、ランキング、表が同じ選択状態を使う。
+- [ ] 最初の年、欠損、空の駅レイヤーで停止しない。
+- [ ] 2020年人口、2021年経済・農林業、2024年駅、2026年境界を区別した。
+- [ ] APIキーや個人情報をアプリへ埋め込んでいない。
+- [ ] データ更新をビルド処理とRDS再生成へ分離した。
+- [ ] 出所・加工内容・解釈上の限界を画面へ表示した。
+- [ ] AIが生成したコードのリアクティブ依存関係を自分で説明できる。
+
+# 参考資料
+
+- Shiny公式：<https://shiny.posit.co/r/getstarted/shiny-basics/lesson1/>
+- Shinyのリアクティブ処理：<https://shiny.posit.co/r/getstarted/build-an-app/reactive-flow/>
+- LeafletとShiny：<https://rstudio.github.io/leaflet/articles/shiny.html>
+- bslib dashboards：<https://rstudio.github.io/bslib/articles/dashboards/index.html>
+- sf：<https://r-spatial.github.io/sf/>

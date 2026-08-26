@@ -1,0 +1,976 @@
+---
+title: "第7章 地理データをRで操作する"
+subtitle: "国土数値情報、sf、空間結合からShiny用データの構築まで"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-copy: true
+    code-overflow: wrap
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: ch7-setup
+#| include: false
+options(scipen = 999)
+Sys.setenv(TZ = "Asia/Tokyo")
+
+library(tidyverse)
+library(readxl)
+library(sf)
+library(units)
+library(scales)
+library(leaflet)
+
+source(file.path("R", "spatial_helpers.R"))
+
+dir.create(file.path("data_raw", "ksj", "n03_kanto"), recursive = TRUE, showWarnings = FALSE)
+dir.create(file.path("data_raw", "ksj", "s12_station"), recursive = TRUE, showWarnings = FALSE)
+dir.create("data_clean", showWarnings = FALSE)
+dir.create("figures", showWarnings = FALSE)
+
+n03_dir <- file.path("data_raw", "ksj", "n03_kanto")
+s12_dir <- file.path("data_raw", "ksj", "s12_station")
+pref_data_path <- file.path("data_raw", "c_pref_gdp.xlsx")
+
+has_spatial_file <- function(path, prefix) {
+  length(
+    list.files(
+      path,
+      pattern = paste0("^", prefix, ".*\\.(shp|geojson|gpkg)$"),
+      recursive = TRUE,
+      ignore.case = TRUE
+    )
+  ) > 0
+}
+
+n03_ready <- has_spatial_file(n03_dir, "N03")
+s12_ready <- has_spatial_file(s12_dir, "S12")
+```
+
+# この章の位置づけ
+
+第6章までは、行と列で表現された統計データを扱いました。第7章では、各行に**場所の形**を表す`geometry`列を加え、次の問いへ進みます。
+
+- ある駅はどの都県に属するか。
+- 都県の面積をどの座標系で計算すべきか。
+- 市区町村の細かなポリゴンを都県単位へ集約するにはどうするか。
+- 第6章の県民経済計算を地図へ結合するには、何をキーにするか。
+- 第8章のShinyアプリが軽く動くよう、どこまで事前処理しておくか。
+
+```{mermaid}
+flowchart LR
+  A[国土数値情報 N03<br/>行政区域] --> D[sfで読込・CRS確認]
+  B[国土数値情報 S12<br/>駅別乗降客数] --> D
+  C[第6章<br/>都道府県GDP等] --> E[属性結合]
+  D --> F[空間結合]
+  E --> G[地図用データ]
+  F --> G
+  G --> H[RDS / GeoPackage]
+  H --> I[第8章 Shiny]
+```
+
+## 到達目標
+
+この章を終えると、次を説明・実行できるようになります。
+
+1. ベクターデータの`point`、`line`、`polygon`を区別する。
+2. `sf`オブジェクトを通常の`tibble`と同じ感覚で加工する。
+3. CRSを確認し、`st_transform()`で目的に合う座標系へ変換する。
+4. `left_join()`による属性結合と、`st_join()`による空間結合を使い分ける。
+5. 都県ポリゴンへGDP・雇用者報酬を結合する。
+6. 駅の線データを代表点へ変換し、都県へ割り当てる。
+7. Shiny向けに軽量化したRDSを作る。
+
+::: {.callout-important}
+## 高度な演習としての前提
+
+この章では、単に地図を描くことよりも、**空間データの定義・座標系・結合単位を検証すること**を重視します。地図が表示されたことは、分析が正しいことの証明ではありません。
+:::
+
+# 使用する実データ
+
+## 国土数値情報とは
+
+国土交通省の「国土数値情報ダウンロードサイト」は、行政区域、土地利用、公共施設、交通、災害リスク、都市計画、地価などをGISデータとして提供しています。
+
+- トップページ：<https://nlftp.mlit.go.jp/ksj/>
+- 行政区域N03：<https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N03-2026.html>
+- 駅別乗降客数S12：<https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-S12-2024.html>
+
+この授業では、次の2種類を使います。
+
+| データ | 識別子 | 基準年 | 形状 | この授業での役割 |
+|---|---:|---:|---|---|
+| 行政区域 | N03 | 2026年1月1日 | polygon | 関東1都6県の境界 |
+| 駅別乗降客数 | S12 | 2024年度 | line | 駅の位置と乗降客数 |
+
+行政区域は関東地方版の`N03-20260101_53_GML.zip`、駅別乗降客数は全国版の`S12-25_GML.zip`を選びます。
+
+::: {.callout-warning}
+## 「最新版」は将来変わる
+
+この教材は2026年8月時点のファイル名を記録しています。サイト更新後に同じ教材を使う場合は、ページ上の基準年、属性定義、使用許諾条件を再確認してください。ファイル名だけを手掛かりに自動取得しない方が安全です。
+:::
+
+## ダウンロードと配置
+
+ZIPを展開し、**展開後の全ファイルをまとめて**次へ置きます。
+
+```text
+data_raw/
+  ksj/
+    n03_kanto/
+      N03-....shp
+      N03-....dbf
+      N03-....shx
+      N03-....prj
+      ...
+    s12_station/
+      S12-....shp
+      S12-....dbf
+      S12-....shx
+      S12-....prj
+      ...
+```
+
+シェープファイルは`.shp`だけでは完結しません。少なくとも`.dbf`、`.shx`、`.prj`などを同じフォルダに残します。
+
+::: {.callout-tip}
+## 命名規則
+
+講義プロジェクトのフォルダ名・ファイル名・Rオブジェクト名・列名はASCII英数字と`_`を使います。ダウンロードした国土数値情報の元ファイル名は変更せず、親フォルダだけを`n03_kanto`、`s12_station`とします。
+:::
+
+## 配置確認
+
+```{r}
+#| label: ch7-file-status
+file_status <- tibble(
+  dataset = c("N03 administrative boundary", "S12 station passengers"),
+  folder = c(n03_dir, s12_dir),
+  ready = c(n03_ready, s12_ready)
+)
+
+file_status
+```
+
+`ready`が`FALSE`の場合は、ZIPが未展開、配置先が異なる、または必要ファイルが揃っていません。
+
+# 空間データの基本構造
+
+## geometryは「特別な1列」
+
+`sf`オブジェクトは、通常のデータフレームに`geometry`列を持たせたものです。そのため、`filter()`、`mutate()`、`group_by()`、`summarise()`などを多くの場合そのまま使えます。
+
+| 形状 | 典型例 | 本章の例 |
+|---|---|---|
+| point | 駅、施設、観測地点 | 駅の代表点 |
+| line | 道路、鉄道、河川 | S12の駅形状 |
+| polygon | 行政区域、用途地域 | N03の行政区域 |
+
+```{mermaid}
+flowchart LR
+  P((point)) --> Q[駅の所在地]
+  L[──── line ────] --> R[鉄道・駅区間]
+  G[▰ polygon] --> S[行政区域]
+```
+
+## 属性結合と空間結合
+
+2種類の結合を混同しないことが重要です。
+
+**属性結合**は共通キーを使います。
+
+```r
+pref_geometry |>
+  left_join(pref_panel, by = join_by(code, pref))
+```
+
+**空間結合**は位置関係を使います。
+
+```r
+station_points |>
+  st_join(pref_geometry, join = st_within)
+```
+
+| 結合 | 判断基準 | 典型的な失敗 |
+|---|---|---|
+| `left_join()` | コードや名称が一致するか | 表記揺れ、桁落ち、重複キー |
+| `st_join()` | 内包・交差・近接など | CRS不一致、境界上の点、無効形状 |
+
+# 行政区域N03を読む
+
+## ファイルを自動検出して読み込む
+
+```{r}
+#| label: ch7-read-n03
+if (n03_ready) {
+  n03_file <- find_spatial_file(n03_dir, prefix = "N03")
+
+  n03_raw <- st_read(
+    n03_file,
+    quiet = TRUE,
+    stringsAsFactors = FALSE
+  )
+
+  tibble(
+    file = basename(n03_file),
+    rows = nrow(n03_raw),
+    columns = ncol(n03_raw),
+    geometry_type = paste(unique(st_geometry_type(n03_raw)), collapse = ", "),
+    epsg = st_crs(n03_raw)$epsg,
+    geographic = st_is_longlat(n03_raw)
+  )
+}
+```
+
+`find_spatial_file()`は、展開先にある`.shp`、`.geojson`、`.gpkg`を検索します。データ版が更新されても、ファイル名をコードへ直書きせずに済みます。
+
+## CRSを必ず確認する
+
+CRSは、座標が何を意味するかを定義します。
+
+```{r}
+#| label: ch7-inspect-crs
+if (n03_ready) {
+  st_crs(n03_raw)
+  st_bbox(n03_raw)
+}
+```
+
+N03は緯度・経度で提供されます。Web地図へ表示するには便利ですが、面積や距離をメートル単位で計算する処理には、投影座標系へ変換する方が扱いやすくなります。
+
+::: {.callout-important}
+## `st_set_crs()`と`st_transform()`は違う
+
+- `st_set_crs()`：座標値を動かさず、「この座標系である」とラベルを付ける。
+- `st_transform()`：座標値を別の座標系へ実際に変換する。
+
+CRSがすでに正しく定義されているデータへ、安易に`st_set_crs(6677)`を使ってはいけません。ここでは`st_transform(6677)`を使います。
+:::
+
+## 必要属性だけへ整える
+
+N03の主な属性は次のとおりです。
+
+| 元列 | 内容 | 講義用列 |
+|---|---|---|
+| `N03_001` | 都道府県名 | `pref` |
+| `N03_004` | 市区町村名 | `municipality` |
+| `N03_007` | 全国地方公共団体コード | `local_code` |
+
+```{r}
+#| label: ch7-clean-n03
+if (n03_ready) {
+  n03_clean <- n03_raw |>
+    transmute(
+      pref = as.character(N03_001),
+      municipality = as.character(N03_004),
+      local_code = as.character(N03_007)
+    ) |>
+    st_make_valid()
+
+  n03_clean |>
+    st_drop_geometry() |>
+    summarise(
+      prefectures = n_distinct(pref),
+      municipalities = n_distinct(municipality),
+      missing_local_code = sum(is.na(local_code))
+    )
+}
+```
+
+`st_make_valid()`は、自己交差などの無効な形状を修復します。ただし、修復後に形状型が変わることがあるため、万能な「おまじない」として使うのではなく、`st_is_valid()`で状態を確認します。
+
+```{r}
+#| label: ch7-validity-check
+if (n03_ready) {
+  tibble(
+    valid_before = mean(st_is_valid(n03_raw)),
+    valid_after = mean(st_is_valid(n03_clean))
+  )
+}
+```
+
+# 市区町村から都県ポリゴンを作る
+
+## 関東1都6県へ絞る
+
+第6章の`c_pref_gdp.xlsx`をコード表として使います。名称だけで結合する前に、2桁の都道府県コードを保持します。
+
+```{r}
+#| label: ch7-pref-code-map
+kanto_codes <- c("08", "09", "10", "11", "12", "13", "14")
+
+pref_code_map <- read_excel(
+  pref_data_path,
+  sheet = "gdp"
+) |>
+  transmute(
+    code = pad_pref_code(code),
+    pref = as.character(pref)
+  ) |>
+  filter(code %in% kanto_codes) |>
+  distinct()
+
+if (n03_ready) {
+  n03_kanto <- n03_clean |>
+    filter(pref %in% pref_code_map$pref)
+
+  n03_kanto |>
+    st_drop_geometry() |>
+    count(pref, sort = TRUE)
+}
+```
+
+## 投影座標系へ変換する
+
+関東を扱う本章では、JGD2011の平面直角座標系第9系であるEPSG:6677を使います。座標単位はメートルです。
+
+```{r}
+#| label: ch7-transform-n03
+if (n03_ready) {
+  n03_kanto_projected <- n03_kanto |>
+    st_transform(6677)
+
+  st_crs(n03_kanto_projected)
+}
+```
+
+::: {.callout-warning}
+## EPSG:6677が常に最適とは限らない
+
+対象地域が全国、北海道、沖縄、海外へ変われば適切な投影法も変わります。「距離を計算するから6677」と暗記するのではなく、分析範囲と目的を確認してください。
+:::
+
+## dissolve：市区町村を都県へ溶かす
+
+`sf`オブジェクトを`group_by(pref)`して`summarise()`すると、同じ都県に属する複数ポリゴンが一つの形状へ統合されます。この処理をdissolveと呼びます。
+
+```{r}
+#| label: ch7-dissolve-pref
+if (n03_ready) {
+  kanto_pref_full_projected <- n03_kanto_projected |>
+    group_by(pref) |>
+    summarise(.groups = "drop") |>
+    left_join(
+      pref_code_map,
+      by = join_by(pref),
+      relationship = "one-to-one"
+    ) |>
+    select(code, pref, geometry) |>
+    mutate(
+      area_km2 = as.numeric(
+        set_units(st_area(geometry), km^2)
+      )
+    )
+
+  kanto_pref_full_projected |>
+    st_drop_geometry() |>
+    arrange(desc(area_km2))
+}
+```
+
+ここで`relationship = "one-to-one"`を指定することで、名称対応表の重複などによる意図しない行増殖を検出できます。
+
+## 表示範囲と分析範囲を分ける
+
+東京都の行政区域には伊豆諸島・小笠原諸島が含まれます。全域を自動ズームすると、関東本土が小さく表示されます。
+
+本教材では、面積は全行政区域から計算し、**ダッシュボード表示用のgeometryだけ**を関東本土へ切り出します。
+
+```{r}
+#| label: ch7-crop-mainland
+if (n03_ready) {
+  mainland_window <- st_bbox(
+    c(xmin = 138.2, ymin = 34.9, xmax = 141.1, ymax = 37.3),
+    crs = st_crs(4326)
+  ) |>
+    st_as_sfc() |>
+    st_transform(6677)
+
+  kanto_pref_projected <- suppressWarnings(
+    st_intersection(kanto_pref_full_projected, mainland_window)
+  )
+}
+```
+
+::: {.callout-note}
+## クロップは「存在しないこと」にする操作ではない
+
+離島を分析対象から除外したのではなく、Web画面の視認性のために表示geometryを別に作っています。面積などの統計は全域geometryから計算した値を保持します。地理データでは、**表示上の都合と分析上の定義を分けて記録する**必要があります。
+:::
+
+## Web表示用に簡略化する
+
+境界の頂点が多いほど、ブラウザへ送るデータが重くなります。投影座標系上で250メートルの許容誤差を与え、境界を簡略化します。
+
+```{r}
+#| label: ch7-simplify
+if (n03_ready) {
+  size_before <- object.size(kanto_pref_projected)
+
+  kanto_pref <- kanto_pref_projected |>
+    mutate(
+      geometry = st_simplify(
+        geometry,
+        preserveTopology = TRUE,
+        dTolerance = 250
+      )
+    ) |>
+    st_transform(4326)
+
+  tibble(
+    version = c("before", "after"),
+    object_size_mb = c(
+      as.numeric(size_before) / 1024^2,
+      as.numeric(object.size(kanto_pref)) / 1024^2
+    )
+  )
+}
+```
+
+```{r}
+#| label: ch7-pref-map
+if (n03_ready) {
+  ggplot(kanto_pref) +
+    geom_sf(aes(fill = area_km2), color = "white", linewidth = 0.4) +
+    geom_sf_text(aes(label = pref), size = 3.5) +
+    scale_fill_viridis_c(labels = label_number(big.mark = ",")) +
+    labs(
+      fill = "面積 (km2)",
+      caption = paste(
+        "資料：国土交通省『国土数値情報（行政区域）』。",
+        "表示geometryは関東本土へ切り出し、簡略化。面積は全行政区域。"
+      )
+    ) +
+    theme_void()
+}
+```
+
+# 第6章の県民経済計算を結合する
+
+## GDPと雇用者報酬のパネルを再利用する
+
+第6章と同じ関数で、横長のExcelを都道府県×年の縦長データへ変換します。
+
+```{r}
+#| label: ch7-pref-panel
+pref_gdp <- read_pref_wide(
+  pref_data_path,
+  sheet = "gdp",
+  value_name = "gdp"
+)
+
+pref_compensation <- read_pref_wide(
+  pref_data_path,
+  sheet = "compensation",
+  value_name = "compensation"
+)
+
+pref_panel <- pref_gdp |>
+  inner_join(
+    pref_compensation,
+    by = join_by(code, pref, year),
+    relationship = "one-to-one"
+  ) |>
+  mutate(
+    compensation_to_gdp = compensation / gdp
+  )
+
+pref_panel |>
+  summarise(
+    rows = n(),
+    prefectures = n_distinct(code),
+    first_year = min(year),
+    last_year = max(year),
+    duplicate_keys = n() - n_distinct(paste(code, year))
+  )
+```
+
+## 属性結合でgeometryへ載せる
+
+2021年を選び、都県コードと名称で結合します。
+
+```{r}
+#| label: ch7-attribute-join
+if (n03_ready) {
+  kanto_panel <- pref_panel |>
+    semi_join(
+      st_drop_geometry(kanto_pref),
+      by = join_by(code, pref)
+    )
+
+  pref_map_2021 <- kanto_pref |>
+    left_join(
+      kanto_panel |>
+        filter(year == 2021),
+      by = join_by(code, pref),
+      relationship = "one-to-one"
+    )
+
+  pref_map_2021 |>
+    st_drop_geometry() |>
+    select(code, pref, year, gdp, compensation, compensation_to_gdp)
+}
+```
+
+```{r}
+#| label: ch7-gdp-map
+if (n03_ready) {
+  ggplot(pref_map_2021) +
+    geom_sf(aes(fill = gdp), color = "white", linewidth = 0.5) +
+    geom_sf_text(aes(label = pref), size = 3.5) +
+    scale_fill_viridis_c(
+      labels = label_number(scale = 1 / 1e6, suffix = "兆円", accuracy = 1)
+    ) +
+    labs(
+      title = "関東1都6県の県内総生産",
+      subtitle = "2021年",
+      fill = "GDP",
+      caption = paste(
+        "資料：内閣府『県民経済計算』、",
+        "国土交通省『国土数値情報（行政区域）』"
+      )
+    ) +
+    theme_void()
+}
+```
+
+::: {.callout-important}
+## 地図の色は「大小」を見せるが、原因を説明しない
+
+東京のGDPが大きいことと、鉄道駅が多いことを同じ画面に載せても、それだけで鉄道がGDPを生んだとは言えません。人口、産業構成、企業本社、昼間人口、面積などが同時に影響します。第8章のダッシュボードは、**探索と記述の道具**として設計します。
+:::
+
+# 駅別乗降客数S12を読む
+
+## 形状と属性を確認する
+
+S12では、駅がpointではなくlineとして収録されています。まず思い込みを捨てて、実際の形状を確認します。
+
+```{r}
+#| label: ch7-read-s12
+if (s12_ready) {
+  s12_file <- find_spatial_file(s12_dir, prefix = "S12")
+
+  s12_raw <- st_read(
+    s12_file,
+    quiet = TRUE,
+    stringsAsFactors = FALSE
+  )
+
+  tibble(
+    file = basename(s12_file),
+    rows = nrow(s12_raw),
+    geometry_type = paste(unique(st_geometry_type(s12_raw)), collapse = ", "),
+    epsg = st_crs(s12_raw)$epsg
+  )
+}
+```
+
+2024年度について使う主な属性は次のとおりです。
+
+| 元列 | 内容 | 講義用列 |
+|---|---|---|
+| `S12_001` | 駅名 | `station_name` |
+| `S12_001g` | 駅グループコード | `station_group` |
+| `S12_002` | 運営会社 | `operator` |
+| `S12_003` | 路線名 | `line_name` |
+| `S12_059` | 2024年度データ有無 | `data_status_2024` |
+| `S12_061` | 2024年乗降客数（人/日） | `passengers_2024` |
+
+```{r}
+#| label: ch7-clean-s12
+if (s12_ready) {
+  station_lines <- s12_raw |>
+    transmute(
+      station_name = as.character(S12_001),
+      station_group = as.character(S12_001g),
+      operator = as.character(S12_002),
+      line_name = as.character(S12_003),
+      data_status_2024 = as.character(S12_059),
+      passengers_2024 = suppressWarnings(as.numeric(S12_061))
+    )
+
+  station_lines |>
+    st_drop_geometry() |>
+    summarise(
+      rows = n(),
+      station_groups = n_distinct(station_group, na.rm = TRUE),
+      missing_passengers = sum(is.na(passengers_2024)),
+      zero_passengers = sum(passengers_2024 == 0, na.rm = TRUE)
+    )
+}
+```
+
+::: {.callout-warning}
+## 乗降客数の比較可能性
+
+S12の乗降客数は各事業者の資料に基づき、全社共通の統一基準で算出されたものではありません。また、非公表・データなしの駅があります。欠損を0へ置換すると、「利用者がいない」と「公表されていない」を混同します。
+:::
+
+## 駅グループ単位へ集約する
+
+同じ駅が複数路線・事業者のlineとして複数行に現れることがあります。本教材では`station_group`単位へ集約し、2024年乗降客数はグループ内の最大値を採用します。
+
+この選択は唯一の正解ではありません。合計すると事業者間の重複計上が起きる可能性があるため、最大値を使うという**分析上のルールを明示**しています。
+
+```{r}
+#| label: ch7-station-aggregate
+if (s12_ready) {
+  station_points_projected <- station_lines |>
+    filter(
+      !is.na(station_group),
+      !is.na(passengers_2024),
+      passengers_2024 >= 0
+    ) |>
+    st_make_valid() |>
+    st_transform(6677) |>
+    group_by(station_group, station_name) |>
+    summarise(
+      passengers_2024 = max(passengers_2024, na.rm = TRUE),
+      operator = paste(
+        sort(unique(na.omit(operator))),
+        collapse = " / "
+      ),
+      line_name = paste(
+        sort(unique(na.omit(line_name))),
+        collapse = " / "
+      ),
+      .groups = "drop"
+    ) |>
+    st_centroid()
+
+  station_points_projected |>
+    st_drop_geometry() |>
+    arrange(desc(passengers_2024)) |>
+    slice_head(n = 10)
+}
+```
+
+::: {.callout-note}
+## なぜ代表点が必要か
+
+第8章では円マーカーで駅を描きます。そのため、駅lineの中心を代表点として作ります。厳密な駅舎座標ではなく、表示・空間結合用の代表点です。用途が「最寄駅までの距離」であれば、より精密な点データを使うべきです。
+:::
+
+# 駅を都県へ空間結合する
+
+## `st_within()`で所属都県を付ける
+
+```{r}
+#| label: ch7-spatial-join
+if (n03_ready && s12_ready) {
+  station_points <- station_points_projected |>
+    st_join(
+      kanto_pref_projected |>
+        select(pref_code = code, pref),
+      join = st_within,
+      left = FALSE
+    ) |>
+    arrange(desc(passengers_2024)) |>
+    distinct(station_group, .keep_all = TRUE) |>
+    st_transform(4326)
+
+  station_points |>
+    st_drop_geometry() |>
+    summarise(
+      stations = n(),
+      prefectures = n_distinct(pref_code),
+      missing_pref = sum(is.na(pref_code))
+    )
+}
+```
+
+`left = FALSE`としたため、関東本土の都県ポリゴン内へ入らない駅は残りません。除外数を確認せず使うと、意図せず全国データの大部分が消えたことを見落とします。
+
+```{r}
+#| label: ch7-join-audit
+if (n03_ready && s12_ready) {
+  tibble(
+    valid_station_groups = nrow(station_points_projected),
+    joined_kanto_stations = nrow(station_points),
+    excluded_outside_scope = nrow(station_points_projected) - nrow(station_points)
+  )
+}
+```
+
+## 都県別に集計する
+
+```{r}
+#| label: ch7-station-summary
+if (n03_ready && s12_ready) {
+  station_summary <- station_points |>
+    st_drop_geometry() |>
+    summarise(
+      stations = n(),
+      passengers_sum = sum(passengers_2024, na.rm = TRUE),
+      passengers_median = median(passengers_2024, na.rm = TRUE),
+      largest_station = station_name[which.max(passengers_2024)],
+      .by = c(pref_code, pref)
+    ) |>
+    left_join(
+      kanto_pref |>
+        st_drop_geometry() |>
+        select(pref_code = code, area_km2),
+      by = join_by(pref_code),
+      relationship = "one-to-one"
+    ) |>
+    mutate(
+      stations_per_1000_km2 = stations / area_km2 * 1000
+    ) |>
+    arrange(desc(stations))
+
+  station_summary
+}
+```
+
+`passengers_sum`は、駅ごとの定義や重複の問題があるため、都県間の厳密な総輸送量ではありません。ダッシュボードでは主に駅マーカーの大きさ・フィルターに使います。
+
+# 静的地図とインタラクティブ地図
+
+## GDPと駅を重ねる
+
+```{r}
+#| label: ch7-combined-static-map
+if (n03_ready && s12_ready) {
+  top_station_points <- station_points |>
+    slice_max(passengers_2024, n = 80, with_ties = FALSE)
+
+  ggplot() +
+    geom_sf(
+      data = pref_map_2021,
+      aes(fill = gdp),
+      color = "white",
+      linewidth = 0.5
+    ) +
+    geom_sf(
+      data = top_station_points,
+      aes(size = passengers_2024),
+      alpha = 0.65
+    ) +
+    scale_fill_viridis_c(
+      labels = label_number(scale = 1 / 1e6, suffix = "兆円", accuracy = 1)
+    ) +
+    scale_size_continuous(
+      labels = label_number(big.mark = ","),
+      range = c(1, 8)
+    ) +
+    labs(
+      fill = "2021年GDP",
+      size = "2024年乗降客数",
+      caption = paste(
+        "注：駅は乗降客数上位80駅。基準年が異なるため、",
+        "同一年の因果関係を示す図ではない。"
+      )
+    ) +
+    theme_void()
+}
+```
+
+## Leafletで確認する
+
+```{r}
+#| label: ch7-leaflet-map
+if (n03_ready && s12_ready) {
+  map_palette <- colorNumeric(
+    palette = "Blues",
+    domain = pref_map_2021$gdp
+  )
+
+  station_display <- station_points |>
+    filter(passengers_2024 >= 50000) |>
+    mutate(
+      label_text = paste0(
+        station_name,
+        "<br>",
+        format(passengers_2024, big.mark = ","),
+        " 人 / 日"
+      )
+    )
+
+  leaflet(pref_map_2021) |>
+    addProviderTiles(providers$CartoDB.Positron) |>
+    addPolygons(
+      fillColor = ~ map_palette(gdp),
+      fillOpacity = 0.75,
+      color = "white",
+      weight = 1,
+      label = ~ paste0(pref, ": ", format(gdp, big.mark = ","))
+    ) |>
+    addCircleMarkers(
+      data = station_display,
+      radius = ~ pmax(3, pmin(12, sqrt(passengers_2024) / 45)),
+      color = "#8c2d04",
+      fillColor = "#fe9929",
+      fillOpacity = 0.75,
+      label = ~ lapply(label_text, htmltools::HTML)
+    )
+}
+```
+
+この地図を第8章では、入力に応じて再計算・更新するShinyアプリへ変えます。
+
+# Shiny用データを一括生成する
+
+ここまでの処理を再現可能にするため、`R/build_kanto_dashboard_data.R`へ関数化しています。
+
+```{r}
+#| label: ch7-build-bundle
+if (n03_ready && s12_ready) {
+  source(file.path("R", "build_kanto_dashboard_data.R"))
+
+  bundle <- build_kanto_dashboard_data()
+}
+```
+
+作成されるファイルは次の2つです。
+
+| 出力 | 用途 |
+|---|---|
+| `data_clean/kanto_dashboard_data.rds` | 第8章のShinyアプリが高速に読むデータ一式 |
+| `data_clean/kanto_spatial.gpkg` | QGISなど他のGISソフトとも交換できる空間データ |
+
+RDSの中身を確認します。
+
+```{r}
+#| label: ch7-inspect-bundle
+bundle_path <- file.path("data_clean", "kanto_dashboard_data.rds")
+
+if (file.exists(bundle_path)) {
+  bundle_check <- readRDS(bundle_path)
+
+  tibble(
+    object = names(bundle_check),
+    class = map_chr(bundle_check, ~ paste(class(.x), collapse = "/")),
+    rows = map_int(bundle_check, ~ if (is.data.frame(.x)) nrow(.x) else NA_integer_)
+  )
+}
+```
+
+::: {.callout-important}
+## なぜShinyからExcelやshapefileを直接読まないのか
+
+重い読込、CRS変換、空間結合、境界簡略化をユーザー操作のたびに繰り返すと、アプリは遅く不安定になります。第7章で分析用データを確定し、第8章ではRDSを起動時に一度だけ読みます。
+:::
+
+# 章末演習
+
+## 演習1：CRSの影響を定量化する
+
+1. N03をEPSG:6677へ変換して都県面積を計算する。
+2. 緯度経度のまま計算した場合と結果を比較する。
+3. `sf_use_s2()`の設定によって意味がどう変わるか調べる。
+4. どの計算を提出値として採用するか、理由を書く。
+
+::: {.callout-note collapse="true"}
+## 考察の方向
+
+緯度経度でも`s2`による球面計算が行われる場合があります。そのため「緯度経度なら必ず計算不能」と単純化しないでください。本演習でEPSG:6677を使う主な理由は、許容誤差や距離をメートルで明示しやすく、処理の意味を説明しやすいことです。
+:::
+
+## 演習2：駅の集約ルールを比較する
+
+同じ`station_group`に複数値がある場合について、次を比較してください。
+
+- 最大値
+- 合計値
+- 平均値
+- 事業者・路線を一つも集約しない値
+
+上位20駅の順位がどれほど変わるか確認し、どのルールが適切かをデータ定義から論じます。
+
+## 演習3：空間述語の頑健性
+
+`st_within()`、`st_intersects()`を使った場合で、都県へ割り当てられる駅数が変わるか確認してください。差がある駅についてgeometryを拡大し、境界上・形状誤差・代表点化のどれが原因か検討します。
+
+```{r}
+#| eval: false
+within_join <- st_join(
+  station_points_projected,
+  kanto_pref_projected,
+  join = st_within,
+  left = FALSE
+)
+
+intersects_join <- st_join(
+  station_points_projected,
+  kanto_pref_projected,
+  join = st_intersects,
+  left = FALSE
+)
+```
+
+## 演習4：地域経済と鉄道の探索指標
+
+2021年のGDPと2024年の駅データを結合し、都県別に次を作成してください。
+
+- 駅数 / 1,000平方キロメートル
+- 乗降客数が5万人以上の駅数
+- 駅数 / GDP
+- 雇用者報酬比率
+
+そのうえで、年が一致しないこと、人口や都市構造を統制していないことを踏まえ、**何が言えて、何が言えないか**を200字程度で説明します。
+
+## 演習5：別の国土数値情報を追加する
+
+次のいずれか一つを追加し、都県単位または駅周辺単位へ集計します。
+
+- 地価公示
+- 医療機関
+- 学校
+- 避難施設
+- 土砂災害警戒区域
+- 将来推計人口メッシュ
+
+追加データについて、基準年、形状型、属性、ライセンス、欠損、集計単位を記録してください。
+
+# 提出課題
+
+次の成果物を提出します。
+
+1. `data_clean/kanto_dashboard_data.rds`
+2. 都県別GDPと主要駅を重ねた地図
+3. 結合監査表（入力行数、出力行数、除外数、重複キー）
+4. CRS、駅集約ルール、年次不一致についての説明
+5. 第8章で追加したい入力・出力の簡単な設計図
+
+採点では、見栄えより次を重視します。
+
+| 観点 | 配点の目安 |
+|---|---:|
+| データ出所・基準年・利用条件の記録 | 15 |
+| CRSとgeometry処理の妥当性 | 25 |
+| 属性結合・空間結合の検証 | 25 |
+| 再現可能な保存と命名 | 15 |
+| 解釈上の限界 | 20 |
+
+# 出所表記と利用上の注意
+
+成果物には、少なくとも次を記載します。
+
+> 出典：国土交通省「国土数値情報（行政区域N03、駅別乗降客数S12）」、内閣府「県民経済計算」。行政区域は都県単位へ統合し、Web表示用に関東本土へ切り出したうえで簡略化。駅形状は駅グループ単位の代表点へ加工。
+
+国土数値情報の各データページに表示される使用許諾条件と注意事項を、使用版ごとに確認します。行政区域には境界未確定地域等の注意があり、駅別乗降客数には事業者間で算出基準が統一されていないという注意があります。
+
+# 章末チェック
+
+- [ ] `.shp`だけでなく関連ファイルを同じフォルダへ置いた。
+- [ ] `st_crs()`、`st_geometry_type()`、`st_bbox()`を確認した。
+- [ ] `st_set_crs()`と`st_transform()`の違いを説明できる。
+- [ ] 面積計算と簡略化を投影座標系で行った。
+- [ ] 市区町村を都県へdissolveした。
+- [ ] 表示geometryと分析上の地理範囲を区別した。
+- [ ] 第6章の都道府県コードを使って属性結合した。
+- [ ] 駅lineを代表点へ変換した理由を説明できる。
+- [ ] `left_join()`と`st_join()`を使い分けた。
+- [ ] 空間結合の前後で行数と除外数を確認した。
+- [ ] 基準年が異なるデータを因果関係として解釈していない。
+- [ ] `kanto_dashboard_data.rds`を作成した。
