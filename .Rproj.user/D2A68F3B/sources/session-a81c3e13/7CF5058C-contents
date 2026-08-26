@@ -1,0 +1,31 @@
+project:
+  type: website
+
+website:
+  title: "Rデータ操作入門（2026年度版）"
+  sidebar:
+    style: docked
+    contents:
+      - index.qmd
+      - chapter1_2026.qmd
+      - chapter2_2026.qmd
+      - chapter3_2026.qmd
+      - chapter4_2026.qmd
+      - chapter5_2026.qmd
+      - chapter6_2026.qmd
+      - chapter7_2026.qmd
+      - chapter8_2026.qmd
+
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-copy: true
+    code-overflow: wrap
+    theme: cosmo
+
+execute:
+  warning: false
+  message: false
+  freeze: false
