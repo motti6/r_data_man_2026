@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>第4章 文字列・日付・複数ファイルを扱う – Rデータ操作入門（2026年度版）</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-6ef75a0fa32a0ab5c67dbc0e0e72a034.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+</head>
+
+<body class="nav-sidebar docked quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./chapter4_2026.html">第4章 文字列・日付・複数ファイルを扱う</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Rデータ操作入門（2026年度版）</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Rデータ操作入門（2026年度版）</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./chapter1_2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">第1章 Rと再現可能なデータ分析の基礎</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./chapter2_2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">第2章 データを自力で取得する</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./chapter3_2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">第3章 データを整える・集計する・結合する</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./chapter4_2026.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">第4章 文字列・日付・複数ファイルを扱う</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./chapter5_2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">第5章 ggplot2による実データ可視化</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./chapter6_2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">第6章 総合演習</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./chapter7_2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">第7章 地理データをRで操作する</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./chapter8_2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">第8章 Shinyで地図ダッシュボードを作る</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#この章の到達目標" id="toc-この章の到達目標" class="nav-link active" data-scroll-target="#この章の到達目標"><span class="header-section-number">1</span> この章の到達目標</a></li>
+  <li><a href="#数値以外のデータも分析対象である" id="toc-数値以外のデータも分析対象である" class="nav-link" data-scroll-target="#数値以外のデータも分析対象である"><span class="header-section-number">2</span> 数値以外のデータも分析対象である</a></li>
+  <li><a href="#文字列を長い形へ変換する" id="toc-文字列を長い形へ変換する" class="nav-link" data-scroll-target="#文字列を長い形へ変換する"><span class="header-section-number">3</span> 1. 文字列を長い形へ変換する</a></li>
+  <li><a href="#文字列を清掃する" id="toc-文字列を清掃する" class="nav-link" data-scroll-target="#文字列を清掃する"><span class="header-section-number">4</span> 2. 文字列を清掃する</a></li>
+  <li><a href="#正規表現の基礎" id="toc-正規表現の基礎" class="nav-link" data-scroll-target="#正規表現の基礎"><span class="header-section-number">5</span> 3. 正規表現の基礎</a></li>
+  <li><a href="#キーワードを検出する" id="toc-キーワードを検出する" class="nav-link" data-scroll-target="#キーワードを検出する"><span class="header-section-number">6</span> 4. キーワードを検出する</a>
+  <ul class="collapse">
+  <li><a href="#単一のテーマ" id="toc-単一のテーマ" class="nav-link" data-scroll-target="#単一のテーマ"><span class="header-section-number">6.1</span> 単一のテーマ</a></li>
+  <li><a href="#複数テーマを列にする" id="toc-複数テーマを列にする" class="nav-link" data-scroll-target="#複数テーマを列にする"><span class="header-section-number">6.2</span> 複数テーマを列にする</a></li>
+  <li><a href="#地域別に数える" id="toc-地域別に数える" class="nav-link" data-scroll-target="#地域別に数える"><span class="header-section-number">6.3</span> 地域別に数える</a></li>
+  </ul></li>
+  <li><a href="#acrossで同じ処理を繰り返す" id="toc-acrossで同じ処理を繰り返す" class="nav-link" data-scroll-target="#acrossで同じ処理を繰り返す"><span class="header-section-number">7</span> 5. <code>across()</code>で同じ処理を繰り返す</a></li>
+  <li><a href="#因子で表示順を管理する" id="toc-因子で表示順を管理する" class="nav-link" data-scroll-target="#因子で表示順を管理する"><span class="header-section-number">8</span> 6. 因子で表示順を管理する</a></li>
+  <li><a href="#日付型を作る" id="toc-日付型を作る" class="nav-link" data-scroll-target="#日付型を作る"><span class="header-section-number">9</span> 7. 日付型を作る</a>
+  <ul class="collapse">
+  <li><a href="#四半期へ集計する" id="toc-四半期へ集計する" class="nav-link" data-scroll-target="#四半期へ集計する"><span class="header-section-number">9.1</span> 四半期へ集計する</a></li>
+  </ul></li>
+  <li><a href="#mapで複数シートを読む" id="toc-mapで複数シートを読む" class="nav-link" data-scroll-target="#mapで複数シートを読む"><span class="header-section-number">10</span> 8. <code>map()</code>で複数シートを読む</a>
+  <ul class="collapse">
+  <li><a href="#横持ち2シートを共通の関数で縦長にする" id="toc-横持ち2シートを共通の関数で縦長にする" class="nav-link" data-scroll-target="#横持ち2シートを共通の関数で縦長にする"><span class="header-section-number">10.1</span> 横持ち2シートを共通の関数で縦長にする</a></li>
+  <li><a href="#異なる構造のシートは別に整える" id="toc-異なる構造のシートは別に整える" class="nav-link" data-scroll-target="#異なる構造のシートは別に整える"><span class="header-section-number">10.2</span> 異なる構造のシートは別に整える</a></li>
+  </ul></li>
+  <li><a href="#文字列条件を都道府県分析へ使う" id="toc-文字列条件を都道府県分析へ使う" class="nav-link" data-scroll-target="#文字列条件を都道府県分析へ使う"><span class="header-section-number">11</span> 9. 文字列条件を都道府県分析へ使う</a></li>
+  <li><a href="#複数ファイルを一括で読む" id="toc-複数ファイルを一括で読む" class="nav-link" data-scroll-target="#複数ファイルを一括で読む"><span class="header-section-number">12</span> 10. 複数ファイルを一括で読む</a></li>
+  <li><a href="#演習" id="toc-演習" class="nav-link" data-scroll-target="#演習"><span class="header-section-number">13</span> 演習</a>
+  <ul class="collapse">
+  <li><a href="#演習1景気コメント" id="toc-演習1景気コメント" class="nav-link" data-scroll-target="#演習1景気コメント"><span class="header-section-number">13.1</span> 演習1：景気コメント</a></li>
+  <li><a href="#演習2日付と四半期" id="toc-演習2日付と四半期" class="nav-link" data-scroll-target="#演習2日付と四半期"><span class="header-section-number">13.2</span> 演習2：日付と四半期</a></li>
+  <li><a href="#演習3都道府県シート" id="toc-演習3都道府県シート" class="nav-link" data-scroll-target="#演習3都道府県シート"><span class="header-section-number">13.3</span> 演習3：都道府県シート</a></li>
+  <li><a href="#演習4名称による分類" id="toc-演習4名称による分類" class="nav-link" data-scroll-target="#演習4名称による分類"><span class="header-section-number">13.4</span> 演習4：名称による分類</a></li>
+  </ul></li>
+  <li><a href="#章末チェック" id="toc-章末チェック" class="nav-link" data-scroll-target="#章末チェック"><span class="header-section-number">14</span> 章末チェック</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">第4章 文字列・日付・複数ファイルを扱う</h1>
+<p class="subtitle lead">景気コメントと都道府県データの実践</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="この章の到達目標" class="level2" data-number="1">
+<h2 data-number="1" class="anchored" data-anchor-id="この章の到達目標"><span class="header-section-number">1</span> この章の到達目標</h2>
+<ol type="1">
+<li>文字列の空白、改行、表記揺れを整える。</li>
+<li>正規表現を使って、条件に合う文章や名称を抽出する。</li>
+<li>年・月から日付型を作り、時系列を安全に並べる。</li>
+<li><code>map()</code>を使って複数列・複数シートへ同じ処理を適用する。</li>
+<li>文字列判定を分析上の定義と混同せず、限界を説明する。</li>
+</ol>
+</section>
+<section id="数値以外のデータも分析対象である" class="level2" data-number="2">
+<h2 data-number="2" class="anchored" data-anchor-id="数値以外のデータも分析対象である"><span class="header-section-number">2</span> 数値以外のデータも分析対象である</h2>
+<p>景気判断、企業の説明資料、自由記述、ニュース、求人、特許などは、数値だけでは捉えにくい情報を含みます。ただし、文章から抽出した語の件数は、そのまま経済効果の大きさではありません。</p>
+<p>この章では、<code>analysis_data.xlsx</code> の <code>watcher_text</code> と、<code>c_pref_gdp.xlsx</code> を使います。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>analysis_path <span class="ot">&lt;-</span> <span class="fu">file.path</span>(<span class="st">"data_raw"</span>, <span class="st">"analysis_data.xlsx"</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>watcher_raw <span class="ot">&lt;-</span> <span class="fu">read_excel</span>(</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  analysis_path,</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">sheet =</span> <span class="st">"watcher_text"</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(watcher_raw)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 12
+Columns: 11
+$ area  &lt;chr&gt; "北海道", "東北", "北関東", "南関東", "甲信越", "東海", "北陸", "近畿", "中国", "四国", …
+$ March &lt;dbl&gt; 41.5, 44.7, 44.0, 48.3, 44.9, 44.7, 49.5, 44.7, 40.2, 45.4, 44.5…
+$ April &lt;dbl&gt; 39.0, 41.4, 37.4, 43.8, 43.0, 42.6, 39.8, 44.3, 43.4, 42.3, 43.5…
+$ com1  &lt;chr&gt; "・商品単価が上がっていることから、売上は前年を上回っているものの、来客数は前年を下回\nっている。支出を抑えるため、客が来店頻…
+$ com2  &lt;chr&gt; "・主食である米の価格が高止まりしていることで、価格に対する客の意識がかなり高まっている。米以外の食材を買い控える傾向も強まって…
+$ com3  &lt;chr&gt; "・例年であれば、春先の４月になると住宅着工数が増えてくるが、今年は４月になっても住宅着工数が全く増えてこない状況にある（住宅販…
+$ com4  &lt;chr&gt; "・景気は少しずつ回復している。ただし、食料品の価格が全体的に高騰したままであり、それに伴って青果物の価格も上昇していることが気…
+$ com5  &lt;chr&gt; "・米国の関税の動きが不透明なことから、景気はやや悪くなっている（家具製造業）。", "・米国の関税政策の影響を受け、案件の後倒…
+$ com6  &lt;chr&gt; "・公共土木工事の受注が前年を若干上回るペースで進むなど、順調に推移している。建築工事は、建設コストの高騰で道内デベロッパーの分…
+$ com7  &lt;chr&gt; "・余り増減がみられない状況となっている。また、米国の関税政策の見通しが不透明なことか\nら、様子見している企業が多く、特段の変…
+$ com8  &lt;chr&gt; "・アルバイトやパートの求人数は減少しているものの、正社員の求人数はやや増加していることから、時給アップの動きと合わせて、正社員…</code></pre>
+</div>
+</div>
+</section>
+<section id="文字列を長い形へ変換する" class="level2" data-number="3">
+<h2 data-number="3" class="anchored" data-anchor-id="文字列を長い形へ変換する"><span class="header-section-number">3</span> 1. 文字列を長い形へ変換する</h2>
+<p>コメントが <code>com1</code>～<code>com8</code> に横並びなので、1行1コメントへ変換します。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>watcher_long <span class="ot">&lt;-</span> watcher_raw <span class="sc">|&gt;</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">cols =</span> <span class="fu">starts_with</span>(<span class="st">"com"</span>),</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">names_to =</span> <span class="st">"comment_id"</span>,</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">values_to =</span> <span class="st">"comment"</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(comment))</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>watcher_long <span class="sc">|&gt;</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(area, March, April, comment_id, comment) <span class="sc">|&gt;</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_head</span>(<span class="at">n =</span> <span class="dv">10</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 10 × 5
+   area   March April comment_id comment                                        
+   &lt;chr&gt;  &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt;      &lt;chr&gt;                                          
+ 1 北海道  41.5  39   com1       "・商品単価が上がっていることから、売上は前年を上回っているものの、来客数は前年を下回\nっ…
+ 2 北海道  41.5  39   com2       "・主食である米の価格が高止まりしていることで、価格に対する客の意識がかなり高まっている。米…
+ 3 北海道  41.5  39   com3       "・例年であれば、春先の４月になると住宅着工数が増えてくるが、今年は４月になっても住宅着工数…
+ 4 北海道  41.5  39   com4       "・景気は少しずつ回復している。ただし、食料品の価格が全体的に高騰したままであり、それに伴っ…
+ 5 北海道  41.5  39   com5       "・米国の関税の動きが不透明なことから、景気はやや悪くなっている（家具製造業）。"……
+ 6 北海道  41.5  39   com6       "・公共土木工事の受注が前年を若干上回るペースで進むなど、順調に推移している。建築工事は、建…
+ 7 北海道  41.5  39   com7       "・余り増減がみられない状況となっている。また、米国の関税政策の見通しが不透明なことか\nら…
+ 8 北海道  41.5  39   com8       "・アルバイトやパートの求人数は減少しているものの、正社員の求人数はやや増加していることから…
+ 9 東北    44.7  41.4 com1       "・値上げにより客単価は上がっているが、買上点数は減少している（スーパー）。"……
+10 東北    44.7  41.4 com2       "・燃料油の販売単価が上旬に最高値をつけた。その後は下落しているものの、高値が続いてい\nる…</code></pre>
+</div>
+</div>
+<p>1行1コメントにすると、語の検出、件数集計、カテゴリ付与が容易になります。</p>
+</section>
+<section id="文字列を清掃する" class="level2" data-number="4">
+<h2 data-number="4" class="anchored" data-anchor-id="文字列を清掃する"><span class="header-section-number">4</span> 2. 文字列を清掃する</h2>
+<p>文章中には改行や連続空白があります。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>watcher_clean <span class="ot">&lt;-</span> watcher_long <span class="sc">|&gt;</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">comment_original =</span> comment,</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">comment =</span> <span class="fu">str_replace_all</span>(comment, <span class="st">"[</span><span class="sc">\\</span><span class="st">r</span><span class="sc">\\</span><span class="st">n]+"</span>, <span class="st">" "</span>),</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">comment =</span> <span class="fu">str_squish</span>(comment),</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">comment =</span> <span class="fu">str_remove</span>(comment, <span class="st">"^[・●○</span><span class="sc">\\</span><span class="st">-]+</span><span class="sc">\\</span><span class="st">s*"</span>)</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>watcher_clean <span class="sc">|&gt;</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(comment_original, comment) <span class="sc">|&gt;</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_head</span>(<span class="at">n =</span> <span class="dv">5</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 5 × 2
+  comment_original                                                       comment
+  &lt;chr&gt;                                                                  &lt;chr&gt;  
+1 "・商品単価が上がっていることから、売上は前年を上回っているものの、来客数は前年を下回\nっている。支出を抑えるため、客が来店頻度を低下さ… 商品単価が上…
+2 "・主食である米の価格が高止まりしていることで、価格に対する客の意識がかなり高まっている。米以外の食材を買い控える傾向も強まっており、これ… 主食である米…
+3 "・例年であれば、春先の４月になると住宅着工数が増えてくるが、今年は４月になっても住宅着工数が全く増えてこない状況にある（住宅販売会社）。… 例年であれば…
+4 "・景気は少しずつ回復している。ただし、食料品の価格が全体的に高騰したままであり、それに伴って青果物の価格も上昇していることが気掛かりであ… 景気は少しず…
+5 "・米国の関税の動きが不透明なことから、景気はやや悪くなっている（家具製造業）。"…… 米国の関税の…</code></pre>
+</div>
+</div>
+<p>元の文章を残したまま、分析用列を別に作ります。清掃で意味を変えていないか、前後を比較します。</p>
+</section>
+<section id="正規表現の基礎" class="level2" data-number="5">
+<h2 data-number="5" class="anchored" data-anchor-id="正規表現の基礎"><span class="header-section-number">5</span> 3. 正規表現の基礎</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>記号</th>
+<th>意味</th>
+<th>例</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>|</code></td>
+<td>または</td>
+<td><code>値上げ|価格上昇</code></td>
+</tr>
+<tr class="even">
+<td><code>.</code></td>
+<td>任意の1文字</td>
+<td><code>景.感</code></td>
+</tr>
+<tr class="odd">
+<td><code>^</code></td>
+<td>文字列の先頭</td>
+<td><code>^北海道</code></td>
+</tr>
+<tr class="even">
+<td><code>$</code></td>
+<td>文字列の末尾</td>
+<td><code>県$</code></td>
+</tr>
+<tr class="odd">
+<td><code>[]</code></td>
+<td>いずれか1文字</td>
+<td><code>[増減]加</code></td>
+</tr>
+<tr class="even">
+<td><code>()</code></td>
+<td>グループ</td>
+<td><code>(人手|人材)不足</code></td>
+</tr>
+<tr class="odd">
+<td><code>\\s</code></td>
+<td>空白</td>
+<td><code>\\s+</code></td>
+</tr>
+<tr class="even">
+<td><code>\\d</code></td>
+<td>数字</td>
+<td><code>\\d{4}</code></td>
+</tr>
+</tbody>
+</table>
+<p>正規表現で特別な意味を持つ記号を文字そのものとして探すときは、エスケープが必要です。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">str_detect</span>(<span class="st">"2026.04"</span>, <span class="st">"</span><span class="sc">\\</span><span class="st">."</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] TRUE</code></pre>
+</div>
+</div>
+</section>
+<section id="キーワードを検出する" class="level2" data-number="6">
+<h2 data-number="6" class="anchored" data-anchor-id="キーワードを検出する"><span class="header-section-number">6</span> 4. キーワードを検出する</h2>
+<section id="単一のテーマ" class="level3" data-number="6.1">
+<h3 data-number="6.1" class="anchored" data-anchor-id="単一のテーマ"><span class="header-section-number">6.1</span> 単一のテーマ</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>tariff_comments <span class="ot">&lt;-</span> watcher_clean <span class="sc">|&gt;</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">str_detect</span>(comment, <span class="st">"関税|通商|輸出"</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(area, comment_id, comment)</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>tariff_comments <span class="sc">|&gt;</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_head</span>(<span class="at">n =</span> <span class="dv">20</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 19 × 3
+   area   comment_id comment                                                    
+   &lt;chr&gt;  &lt;chr&gt;      &lt;chr&gt;                                                      
+ 1 北海道 com5       米国の関税の動きが不透明なことから、景気はやや悪くなっている（家具製造業）。……
+ 2 北海道 com7       余り増減がみられない状況となっている。また、米国の関税政策の見通しが不透明なことか ら、様子見している企業が多く、特…
+ 3 東北   com5       米国の関税政策の影響を受け、案件の後倒しや計画中止が出てきている（一般機械器具製造 業）。……
+ 4 東北   com7       米国の関税政策や米の高騰により原材料価格が上がり、利益がひっ迫している企業は多いが、求人数はそれほど変わらない。企業…
+ 5 北関東 com5       当社は輸出はしていないが、米国の関税政策で景気が悪くなったら、売上が少なくなるの ではないかと警戒して、多少、発注を…
+ 6 南関東 com2       米国の関税政策に伴う金融市場の混乱もあり、金融資産を保有する富裕層の客が高額品を購入する際の決定率が悪くなっている（…
+ 7 南関東 com8       エンジニアの引き合いについて具体的な変化は現れていないものの、米国の関税政策の話 題が現場でも出ており、新たな引き合…
+ 8 東海   com6       当地域の企業の設備投資などが、自動車関税の今後の動きが見えないことで停滞してい る（鉄鋼業）。……
+ 9 東海   com7       米国からの追加関税施策の影響により、採用を手控える法人側の動向が見られる（民間職業紹介機関）。……
+10 東海   com8       これまで人材紹介会社に自社の求人作成依頼を行うと完了まで１か月以上掛かっていたが、今月は10日程で作成が完了しており…
+11 北陸   com2       米国の追加関税による先行きの不透明感からか、これまで堅調に推移し店の売上全体をけん引してきた富裕層による高額品の購入…
+12 北陸   com8       新規求人数が減少している。また、米国の関税による影響で、特に製造業からは、受注が減少しているという声や、今後の受注の…
+13 近畿   com4       米国の輸入関税引上げについて、企業の間で様子見の動きが出ており、一時中断する案 件も発生している（輸送用機械器具製造…
+14 近畿   com8       新卒採用では売手市場が続くなか、企業からの求人は前年よりも増えている。特に新卒求人の申込みが好調で、紹介できる求職者…
+15 中国   com4       鉄鋼業向け大口注文、輸出の引き合いも少なく、現在の生産水準が継続する見込みである （窯業・土石製品製造業）。……
+16 中国   com5       当社は北米市場へ多くの製品を輸出しているが、米国の関税の問題による出荷減少、生産計画減少が見え始めた。また、円高によ…
+17 四国   com5       現在、米国の関税政策により、景気が大変悪化している。特に、自動車関連の充電バッテリーや機械組立ての企業は、大変な不況…
+18 九州   com5       過去２～３か月は順調に受注量や生産量は伸びていたが、米国の関税問題により輸出製品に影響が出るため、セットメーカー等の…
+19 沖縄   com3       米国の関税政策の影響により、新規客が減少し、車の購入もかなり慎重な姿勢が目立っ ている（乗用車販売店）。……</code></pre>
+</div>
+</div>
+</section>
+<section id="複数テーマを列にする" class="level3" data-number="6.2">
+<h3 data-number="6.2" class="anchored" data-anchor-id="複数テーマを列にする"><span class="header-section-number">6.2</span> 複数テーマを列にする</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>watcher_tagged <span class="ot">&lt;-</span> watcher_clean <span class="sc">|&gt;</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">tariff =</span> <span class="fu">str_detect</span>(comment, <span class="st">"関税|通商|輸出"</span>),</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">price =</span> <span class="fu">str_detect</span>(comment, <span class="st">"物価|価格|値上げ|高騰|原材料"</span>),</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">consumption =</span> <span class="fu">str_detect</span>(comment, <span class="st">"買い控え|節約|生活防衛|買上点数"</span>),</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">labor =</span> <span class="fu">str_detect</span>(comment, <span class="st">"人手不足|人材不足|採用|求人|時給"</span>),</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">inbound =</span> <span class="fu">str_detect</span>(comment, <span class="st">"インバウンド|訪日|外国人客"</span>)</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>watcher_tagged <span class="sc">|&gt;</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">across</span>(</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>      <span class="fu">c</span>(tariff, price, consumption, labor, inbound),</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>      <span class="sc">~</span> <span class="fu">sum</span>(.x, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 5
+  tariff price consumption labor inbound
+   &lt;int&gt; &lt;int&gt;       &lt;int&gt; &lt;int&gt;   &lt;int&gt;
+1     19    31           8    19      11</code></pre>
+</div>
+</div>
+<p>キーワード設計により結果が変わるため、語の一覧と採用理由を残します。</p>
+</section>
+<section id="地域別に数える" class="level3" data-number="6.3">
+<h3 data-number="6.3" class="anchored" data-anchor-id="地域別に数える"><span class="header-section-number">6.3</span> 地域別に数える</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>keyword_by_area <span class="ot">&lt;-</span> watcher_tagged <span class="sc">|&gt;</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">comments =</span> <span class="fu">n</span>(),</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">tariff_n =</span> <span class="fu">sum</span>(tariff),</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">price_n =</span> <span class="fu">sum</span>(price),</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">consumption_n =</span> <span class="fu">sum</span>(consumption),</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">labor_n =</span> <span class="fu">sum</span>(labor),</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">inbound_n =</span> <span class="fu">sum</span>(inbound),</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">.by =</span> area</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(price_n))</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>keyword_by_area</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 12 × 7
+   area   comments tariff_n price_n consumption_n labor_n inbound_n
+   &lt;chr&gt;     &lt;int&gt;    &lt;int&gt;   &lt;int&gt;         &lt;int&gt;   &lt;int&gt;     &lt;int&gt;
+ 1 東海          8        3       5             0       2         1
+ 2 北関東        7        1       4             1       1         2
+ 3 甲信越        7        0       4             1       1         0
+ 4 北海道        8        2       3             1       1         0
+ 5 東北          8        2       3             2       2         0
+ 6 北陸          8        2       3             1       2         1
+ 7 南関東        8        2       2             0       1         1
+ 8 中国          8        2       2             0       1         1
+ 9 沖縄          7        1       2             0       2         0
+10 近畿          8        2       1             1       2         1
+11 四国          8        1       1             0       2         3
+12 九州          8        1       1             1       2         1</code></pre>
+</div>
+</div>
+<p>各地域のコメント数が同じとは限りません。件数だけでなく比率も確認します。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>keyword_by_area <span class="ot">&lt;-</span> keyword_by_area <span class="sc">|&gt;</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">price_share =</span> price_n <span class="sc">/</span> comments,</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">labor_share =</span> labor_n <span class="sc">/</span> comments</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+</section>
+<section id="acrossで同じ処理を繰り返す" class="level2" data-number="7">
+<h2 data-number="7" class="anchored" data-anchor-id="acrossで同じ処理を繰り返す"><span class="header-section-number">7</span> 5. <code>across()</code>で同じ処理を繰り返す</h2>
+<p>コメント列が横持ちのままなら、複数列に同じ判定を適用できます。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>watcher_raw <span class="sc">|&gt;</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">across</span>(</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>      <span class="at">.cols =</span> <span class="fu">starts_with</span>(<span class="st">"com"</span>),</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>      <span class="at">.fns =</span> <span class="sc">~</span> <span class="fu">str_detect</span>(.x, <span class="st">"関税|通商"</span>),</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>      <span class="at">.names =</span> <span class="st">"{.col}_tariff"</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(area, <span class="fu">ends_with</span>(<span class="st">"_tariff"</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_head</span>(<span class="at">n =</span> <span class="dv">5</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 5 × 9
+  area   com1_tariff com2_tariff com3_tariff com4_tariff com5_tariff com6_tariff
+  &lt;chr&gt;  &lt;lgl&gt;       &lt;lgl&gt;       &lt;lgl&gt;       &lt;lgl&gt;       &lt;lgl&gt;       &lt;lgl&gt;      
+1 北海道 FALSE       FALSE       FALSE       FALSE       TRUE        FALSE      
+2 東北   FALSE       FALSE       FALSE       FALSE       TRUE        FALSE      
+3 北関東 FALSE       FALSE       FALSE       FALSE       TRUE        FALSE      
+4 南関東 FALSE       TRUE        FALSE       FALSE       FALSE       FALSE      
+5 甲信越 FALSE       FALSE       FALSE       FALSE       FALSE       FALSE      
+# ℹ 2 more variables: com7_tariff &lt;lgl&gt;, com8_tariff &lt;lgl&gt;</code></pre>
+</div>
+</div>
+<p>ただし、後の集計や可視化を考えると、通常は1行1コメントの縦持ちが扱いやすいです。</p>
+</section>
+<section id="因子で表示順を管理する" class="level2" data-number="8">
+<h2 data-number="8" class="anchored" data-anchor-id="因子で表示順を管理する"><span class="header-section-number">8</span> 6. 因子で表示順を管理する</h2>
+<p>文字列のまま並べると、五十音順やアルファベット順になります。経済圏や地理順など、意味のある順序を明示します。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>area_order <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"北海道"</span>, <span class="st">"東北"</span>, <span class="st">"北関東"</span>, <span class="st">"南関東"</span>, <span class="st">"甲信越"</span>, <span class="st">"東海"</span>,</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  <span class="st">"北陸"</span>, <span class="st">"近畿"</span>, <span class="st">"中国"</span>, <span class="st">"四国"</span>, <span class="st">"九州"</span>, <span class="st">"沖縄"</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>watcher_area <span class="ot">&lt;-</span> watcher_raw <span class="sc">|&gt;</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">area =</span> <span class="fu">factor</span>(area, <span class="at">levels =</span> area_order),</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">change =</span> April <span class="sc">-</span> March</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(area)</span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>watcher_area <span class="sc">|&gt;</span></span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(area, March, April, change)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 12 × 4
+   area   March April change
+   &lt;fct&gt;  &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt;
+ 1 北海道  41.5  39   -2.5  
+ 2 東北    44.7  41.4 -3.30 
+ 3 北関東  44    37.4 -6.6  
+ 4 南関東  48.3  43.8 -4.5  
+ 5 甲信越  44.9  43   -1.90 
+ 6 東海    44.7  42.6 -2.10 
+ 7 北陸    49.5  39.8 -9.7  
+ 8 近畿    44.7  44.3 -0.400
+ 9 中国    40.2  43.4  3.20 
+10 四国    45.4  42.3 -3.1  
+11 九州    44.5  43.5 -1    
+12 沖縄    47.2  51.5  4.30 </code></pre>
+</div>
+</div>
+<p>東・中・西のような大分類を作る場合は、分類ルールをコードとして残します。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>watcher_area <span class="ot">&lt;-</span> watcher_area <span class="sc">|&gt;</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">broad_area =</span> <span class="fu">case_when</span>(</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>      area <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"北海道"</span>, <span class="st">"東北"</span>, <span class="st">"北関東"</span>, <span class="st">"南関東"</span>) <span class="sc">~</span> <span class="st">"東日本"</span>,</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>      area <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"甲信越"</span>, <span class="st">"東海"</span>, <span class="st">"北陸"</span>) <span class="sc">~</span> <span class="st">"中日本"</span>,</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>      area <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"近畿"</span>, <span class="st">"中国"</span>, <span class="st">"四国"</span>, <span class="st">"九州"</span>, <span class="st">"沖縄"</span>) <span class="sc">~</span> <span class="st">"西日本"</span>,</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>      <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA_character_</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">broad_area =</span> <span class="fu">factor</span>(</span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>      broad_area,</span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>      <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"東日本"</span>, <span class="st">"中日本"</span>, <span class="st">"西日本"</span>)</span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>これは講義用の分類例です。公的な地域区分と一致するとは限らないため、分析では定義を明記します。</p>
+</section>
+<section id="日付型を作る" class="level2" data-number="9">
+<h2 data-number="9" class="anchored" data-anchor-id="日付型を作る"><span class="header-section-number">9</span> 7. 日付型を作る</h2>
+<p>国際収支統計の年と月から、月初日の日付を作ります。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>bop <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">file.path</span>(<span class="st">"data_raw"</span>, <span class="st">"a_bop.csv"</span>),</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">locale =</span> <span class="fu">locale</span>(<span class="at">encoding =</span> <span class="st">"UTF-8"</span>),</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">trim_ws =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">na =</span> <span class="fu">c</span>(<span class="st">""</span>, <span class="st">"NA"</span>),</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_col_types =</span> <span class="cn">FALSE</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span></span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fill</span>(year) <span class="sc">|&gt;</span></span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">year =</span> <span class="fu">as.integer</span>(year),</span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">month_no =</span> <span class="fu">as.integer</span>(month),</span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">date =</span> <span class="fu">make_date</span>(year, month_no, <span class="dv">1</span>),</span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">quarter =</span> lubridate<span class="sc">::</span><span class="fu">quarter</span>(date),</span>
+<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">year_quarter =</span> <span class="fu">paste0</span>(</span>
+<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a>      lubridate<span class="sc">::</span><span class="fu">year</span>(date),</span>
+<span id="cb21-16"><a href="#cb21-16" aria-hidden="true" tabindex="-1"></a>      <span class="st">"Q"</span>,</span>
+<span id="cb21-17"><a href="#cb21-17" aria-hidden="true" tabindex="-1"></a>      lubridate<span class="sc">::</span><span class="fu">quarter</span>(date)</span>
+<span id="cb21-18"><a href="#cb21-18" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb21-19"><a href="#cb21-19" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb21-20"><a href="#cb21-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-21"><a href="#cb21-21" aria-hidden="true" tabindex="-1"></a>bop <span class="sc">|&gt;</span></span>
+<span id="cb21-22"><a href="#cb21-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(year, month, date, quarter, year_quarter) <span class="sc">|&gt;</span></span>
+<span id="cb21-23"><a href="#cb21-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_head</span>(<span class="at">n =</span> <span class="dv">15</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 15 × 5
+    year month date       quarter year_quarter
+   &lt;int&gt; &lt;dbl&gt; &lt;date&gt;       &lt;int&gt; &lt;chr&gt;       
+ 1  1996     1 1996-01-01       1 1996Q1      
+ 2  1996     2 1996-02-01       1 1996Q1      
+ 3  1996     3 1996-03-01       1 1996Q1      
+ 4  1996     4 1996-04-01       2 1996Q2      
+ 5  1996     5 1996-05-01       2 1996Q2      
+ 6  1996     6 1996-06-01       2 1996Q2      
+ 7  1996     7 1996-07-01       3 1996Q3      
+ 8  1996     8 1996-08-01       3 1996Q3      
+ 9  1996     9 1996-09-01       3 1996Q3      
+10  1996    10 1996-10-01       4 1996Q4      
+11  1996    11 1996-11-01       4 1996Q4      
+12  1996    12 1996-12-01       4 1996Q4      
+13  1997     1 1997-01-01       1 1997Q1      
+14  1997     2 1997-02-01       1 1997Q1      
+15  1997     3 1997-03-01       1 1997Q1      </code></pre>
+</div>
+</div>
+<p>文字列の年月は、辞書順と時系列順が一致しない場合があります。分析前に <code>Date</code> へ変換します。</p>
+<section id="四半期へ集計する" class="level3" data-number="9.1">
+<h3 data-number="9.1" class="anchored" data-anchor-id="四半期へ集計する"><span class="header-section-number">9.1</span> 四半期へ集計する</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>bop_quarter <span class="ot">&lt;-</span> bop <span class="sc">|&gt;</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">trade_balance =</span> exports <span class="sc">-</span> imports) <span class="sc">|&gt;</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">exports =</span> <span class="fu">sum</span>(exports, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">imports =</span> <span class="fu">sum</span>(imports, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">trade_balance =</span> <span class="fu">sum</span>(trade_balance, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">months =</span> <span class="fu">n</span>(),</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">.by =</span> <span class="fu">c</span>(year, quarter)</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">complete_quarter =</span> months <span class="sc">==</span> <span class="dv">3</span>)</span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>bop_quarter <span class="sc">|&gt;</span></span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_tail</span>(<span class="at">n =</span> <span class="dv">12</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 12 × 7
+    year quarter exports imports trade_balance months complete_quarter
+   &lt;int&gt;   &lt;int&gt;   &lt;dbl&gt;   &lt;dbl&gt;         &lt;dbl&gt;  &lt;int&gt; &lt;lgl&gt;           
+ 1  2022       2  245820  284229        -38409      3 TRUE            
+ 2  2022       3  254403  309656        -55253      3 TRUE            
+ 3  2022       4  255921  304878        -48957      3 TRUE            
+ 4  2023       1  241537  278242        -36705      3 TRUE            
+ 5  2023       2  245496  257394        -11898      3 TRUE            
+ 6  2023       3  254153  259997         -5844      3 TRUE            
+ 7  2023       4  261847  273041        -11194      3 TRUE            
+ 8  2024       1  256293  268939        -12646      3 TRUE            
+ 9  2024       2  262245  274802        -12557      3 TRUE            
+10  2024       3  265444  274940         -9496      3 TRUE            
+11  2024       4  265290  265470          -180      3 TRUE            
+12  2025       1  271278  286736        -15458      3 TRUE            </code></pre>
+</div>
+</div>
+<p>四半期末まで3か月そろっていない観測を、完成した四半期と同じように扱ってはいけません。</p>
+</section>
+</section>
+<section id="mapで複数シートを読む" class="level2" data-number="10">
+<h2 data-number="10" class="anchored" data-anchor-id="mapで複数シートを読む"><span class="header-section-number">10</span> 8. <code>map()</code>で複数シートを読む</h2>
+<p>都道府県GDPファイルには3シートがあります。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>pref_path <span class="ot">&lt;-</span> <span class="fu">file.path</span>(<span class="st">"data_raw"</span>, <span class="st">"c_pref_gdp.xlsx"</span>)</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>pref_sheets <span class="ot">&lt;-</span> <span class="fu">excel_sheets</span>(pref_path)</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>pref_sheets</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "gdp"           "compensation"  "agri_forestry"</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>pref_sheet_list <span class="ot">&lt;-</span> pref_sheets <span class="sc">|&gt;</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_names</span>() <span class="sc">|&gt;</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">map</span>(<span class="sc">~</span> <span class="fu">read_excel</span>(pref_path, <span class="at">sheet =</span> .x))</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a><span class="fu">map</span>(pref_sheet_list, dim)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$gdp
+[1] 47 14
+
+$compensation
+[1] 47 13
+
+$agri_forestry
+[1] 47  5</code></pre>
+</div>
+</div>
+<p><code>map()</code>の結果はリストです。各シートの構造が異なるため、無理にそのまま縦結合せず、構造を確認します。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">map</span>(pref_sheet_list, names)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$gdp
+ [1] "code"  "pref"  "2011"  "2012"  "2013"  "2014"  "2015"  "2016"  "2017" 
+[10] "2018"  "2019"  "2020"  "2021"  "...14"
+
+$compensation
+ [1] "code" "pref" "2011" "2012" "2013" "2014" "2015" "2016" "2017" "2018"
+[11] "2019" "2020" "2021"
+
+$agri_forestry
+[1] "code"        "pref"        "year"        "forestry"    "agriculture"</code></pre>
+</div>
+</div>
+<section id="横持ち2シートを共通の関数で縦長にする" class="level3" data-number="10.1">
+<h3 data-number="10.1" class="anchored" data-anchor-id="横持ち2シートを共通の関数で縦長にする"><span class="header-section-number">10.1</span> 横持ち2シートを共通の関数で縦長にする</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>wide_pref_to_long <span class="ot">&lt;-</span> <span class="cf">function</span>(data, value_name) {</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>  data <span class="sc">|&gt;</span></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(<span class="sc">-</span><span class="fu">matches</span>(<span class="st">"^</span><span class="sc">\\</span><span class="st">.</span><span class="sc">\\</span><span class="st">.</span><span class="sc">\\</span><span class="st">."</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pivot_longer</span>(</span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>      <span class="at">cols =</span> <span class="fu">matches</span>(<span class="st">"^</span><span class="sc">\\</span><span class="st">d{4}$"</span>),</span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>      <span class="at">names_to =</span> <span class="st">"year"</span>,</span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">names_transform =</span> <span class="fu">list</span>(<span class="at">year =</span> as.integer),</span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>      <span class="at">values_to =</span> value_name</span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">|&gt;</span></span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">code =</span> <span class="fu">str_pad</span>(<span class="fu">as.character</span>(code), <span class="dv">2</span>, <span class="at">pad =</span> <span class="st">"0"</span>))</span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>pref_gdp_long <span class="ot">&lt;-</span> <span class="fu">wide_pref_to_long</span>(</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>  pref_sheet_list[[<span class="st">"gdp"</span>]],</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>  <span class="st">"gdp"</span></span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>pref_comp_long <span class="ot">&lt;-</span> <span class="fu">wide_pref_to_long</span>(</span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>  pref_sheet_list[[<span class="st">"compensation"</span>]],</span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a>  <span class="st">"compensation"</span></span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-11"><a href="#cb32-11" aria-hidden="true" tabindex="-1"></a>pref_gdp_long <span class="sc">|&gt;</span></span>
+<span id="cb32-12"><a href="#cb32-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_head</span>(<span class="at">n =</span> <span class="dv">10</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 10 × 4
+   code  pref    year      gdp
+   &lt;chr&gt; &lt;chr&gt;  &lt;int&gt;    &lt;dbl&gt;
+ 1 01    北海道  2011 19138904
+ 2 01    北海道  2012 19101751
+ 3 01    北海道  2013 19782886
+ 4 01    北海道  2014 19675151
+ 5 01    北海道  2015 19967875
+ 6 01    北海道  2016 19807461
+ 7 01    北海道  2017 20237922
+ 8 01    北海道  2018 20273811
+ 9 01    北海道  2019 20343005
+10 01    北海道  2020 19389692</code></pre>
+</div>
+</div>
+</section>
+<section id="異なる構造のシートは別に整える" class="level3" data-number="10.2">
+<h3 data-number="10.2" class="anchored" data-anchor-id="異なる構造のシートは別に整える"><span class="header-section-number">10.2</span> 異なる構造のシートは別に整える</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>pref_agri <span class="ot">&lt;-</span> pref_sheet_list[[<span class="st">"agri_forestry"</span>]] <span class="sc">|&gt;</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">code =</span> <span class="fu">str_pad</span>(<span class="fu">as.character</span>(code), <span class="dv">2</span>, <span class="at">pad =</span> <span class="st">"0"</span>),</span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">year =</span> <span class="fu">as.integer</span>(year),</span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">agriculture_forestry =</span> agriculture <span class="sc">+</span> forestry</span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a>pref_agri <span class="sc">|&gt;</span></span>
+<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_head</span>(<span class="at">n =</span> <span class="dv">10</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 10 × 6
+   code  pref    year forestry agriculture agriculture_forestry
+   &lt;chr&gt; &lt;chr&gt;  &lt;int&gt;    &lt;dbl&gt;       &lt;dbl&gt;                &lt;dbl&gt;
+ 1 01    北海道  2021    16823      588468               605291
+ 2 02    青森県  2021     2507      165946               168453
+ 3 03    岩手県  2021     9682      102230               111912
+ 4 04    宮城県  2021     4583       70031                74614
+ 5 05    秋田県  2021     7779       76540                84319
+ 6 06    山形県  2021     3660       94600                98260
+ 7 07    福島県  2021     5541       82980                88521
+ 8 08    茨城県  2021     3495      230556               234051
+ 9 09    栃木県  2021     4686      110996               115682
+10 10    群馬県  2021     3089       93514                96603</code></pre>
+</div>
+</div>
+<p>同じExcel内でも、シートの形が同じとは限りません。共通化は、観測単位と列構造が一致する範囲に限定します。</p>
+</section>
+</section>
+<section id="文字列条件を都道府県分析へ使う" class="level2" data-number="11">
+<h2 data-number="11" class="anchored" data-anchor-id="文字列条件を都道府県分析へ使う"><span class="header-section-number">11</span> 9. 文字列条件を都道府県分析へ使う</h2>
+<p>都道府県名に「山」を含むかを判定します。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>pref_name_rule <span class="ot">&lt;-</span> pref_agri <span class="sc">|&gt;</span></span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">contains_yama =</span> <span class="fu">str_detect</span>(pref, <span class="st">"山"</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(pref, contains_yama)</span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>pref_name_rule</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 47 × 2
+   pref   contains_yama
+   &lt;chr&gt;  &lt;lgl&gt;        
+ 1 北海道 FALSE        
+ 2 青森県 FALSE        
+ 3 岩手県 FALSE        
+ 4 宮城県 FALSE        
+ 5 秋田県 FALSE        
+ 6 山形県 TRUE         
+ 7 福島県 FALSE        
+ 8 茨城県 FALSE        
+ 9 栃木県 FALSE        
+10 群馬県 FALSE        
+# ℹ 37 more rows</code></pre>
+</div>
+</div>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>これは地形分類ではない
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><code>str_detect(pref, "山")</code>が測るのは「名称に文字として山を含むか」です。山地の多さ、農林業の重要性、中山間地域かどうかを直接測っていません。演習では、文字列処理の練習としてこの規則を使い、結論では限界を明記します。</p>
+</div>
+</div>
+<p>GDPと結合して、農林業シェアを作ります。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>pref_gdp_2021 <span class="ot">&lt;-</span> pref_gdp_long <span class="sc">|&gt;</span></span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(year <span class="sc">==</span> <span class="dv">2021</span>) <span class="sc">|&gt;</span></span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(code, pref, year, gdp)</span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a>pref_agri_share <span class="ot">&lt;-</span> pref_agri <span class="sc">|&gt;</span></span>
+<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(code, pref, year, agriculture_forestry) <span class="sc">|&gt;</span></span>
+<span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(</span>
+<span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a>    pref_gdp_2021,</span>
+<span id="cb38-9"><a href="#cb38-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">by =</span> <span class="fu">join_by</span>(code, pref, year),</span>
+<span id="cb38-10"><a href="#cb38-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">relationship =</span> <span class="st">"one-to-one"</span></span>
+<span id="cb38-11"><a href="#cb38-11" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb38-12"><a href="#cb38-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb38-13"><a href="#cb38-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">contains_yama =</span> <span class="fu">str_detect</span>(pref, <span class="st">"山"</span>),</span>
+<span id="cb38-14"><a href="#cb38-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">share =</span> agriculture_forestry <span class="sc">/</span> gdp</span>
+<span id="cb38-15"><a href="#cb38-15" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb38-16"><a href="#cb38-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-17"><a href="#cb38-17" aria-hidden="true" tabindex="-1"></a>pref_agri_share <span class="sc">|&gt;</span></span>
+<span id="cb38-18"><a href="#cb38-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb38-19"><a href="#cb38-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">prefectures =</span> <span class="fu">n</span>(),</span>
+<span id="cb38-20"><a href="#cb38-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_share =</span> <span class="fu">mean</span>(share, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb38-21"><a href="#cb38-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">median_share =</span> <span class="fu">median</span>(share, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb38-22"><a href="#cb38-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">.by =</span> contains_yama</span>
+<span id="cb38-23"><a href="#cb38-23" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 2 × 4
+  contains_yama prefectures mean_share median_share
+  &lt;lgl&gt;               &lt;int&gt;      &lt;dbl&gt;        &lt;dbl&gt;
+1 FALSE                  41     0.0125       0.0105
+2 TRUE                    6     0.0123       0.0120</code></pre>
+</div>
+</div>
+</section>
+<section id="複数ファイルを一括で読む" class="level2" data-number="12">
+<h2 data-number="12" class="anchored" data-anchor-id="複数ファイルを一括で読む"><span class="header-section-number">12</span> 10. 複数ファイルを一括で読む</h2>
+<p>同じ列構造のCSVが複数ある場合に限り、一括読込が有効です。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>csv_paths <span class="ot">&lt;-</span> <span class="fu">list.files</span>(</span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"data_raw/monthly_files"</span>,</span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">pattern =</span> <span class="st">"</span><span class="sc">\\</span><span class="st">.csv$"</span>,</span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">full.names =</span> <span class="cn">TRUE</span></span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a>monthly_data <span class="ot">&lt;-</span> csv_paths <span class="sc">|&gt;</span></span>
+<span id="cb40-8"><a href="#cb40-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_names</span>(basename) <span class="sc">|&gt;</span></span>
+<span id="cb40-9"><a href="#cb40-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">map</span>(</span>
+<span id="cb40-10"><a href="#cb40-10" aria-hidden="true" tabindex="-1"></a>    <span class="sc">~</span> <span class="fu">read_csv</span>(</span>
+<span id="cb40-11"><a href="#cb40-11" aria-hidden="true" tabindex="-1"></a>      .x,</span>
+<span id="cb40-12"><a href="#cb40-12" aria-hidden="true" tabindex="-1"></a>      <span class="at">locale =</span> <span class="fu">locale</span>(<span class="at">encoding =</span> <span class="st">"UTF-8"</span>),</span>
+<span id="cb40-13"><a href="#cb40-13" aria-hidden="true" tabindex="-1"></a>      <span class="at">show_col_types =</span> <span class="cn">FALSE</span></span>
+<span id="cb40-14"><a href="#cb40-14" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb40-15"><a href="#cb40-15" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb40-16"><a href="#cb40-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-17"><a href="#cb40-17" aria-hidden="true" tabindex="-1"></a><span class="fu">map</span>(monthly_data, names)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>列名や型を確認してから、縦結合します。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>all_months <span class="ot">&lt;-</span> monthly_data <span class="sc">|&gt;</span></span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list_rbind</span>(<span class="at">names_to =</span> <span class="st">"source_file"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>ファイルごとに列がずれていると、意図しない欠損列が増えます。<code>map(names)</code>、<code>map(dim)</code>、<code>map(colSums(is.na(.x)))</code>などで事前確認します。</p>
+</section>
+<section id="演習" class="level2" data-number="13">
+<h2 data-number="13" class="anchored" data-anchor-id="演習"><span class="header-section-number">13</span> 演習</h2>
+<section id="演習1景気コメント" class="level3" data-number="13.1">
+<h3 data-number="13.1" class="anchored" data-anchor-id="演習1景気コメント"><span class="header-section-number">13.1</span> 演習1：景気コメント</h3>
+<ol type="1">
+<li><code>com1</code>～<code>com8</code>を1行1コメントへ変換する。</li>
+<li>改行と連続空白を除く。</li>
+<li>「価格」「関税」「人手不足」に関する辞書を自分で作る。</li>
+<li>地域別の言及件数と比率を求める。</li>
+<li>辞書方式の長所と限界を説明する。</li>
+</ol>
+</section>
+<section id="演習2日付と四半期" class="level3" data-number="13.2">
+<h3 data-number="13.2" class="anchored" data-anchor-id="演習2日付と四半期"><span class="header-section-number">13.2</span> 演習2：日付と四半期</h3>
+<p>国際収支統計を月次日付へ変換し、輸出、輸入、貿易収支を四半期合計へ集計してください。未完成四半期を識別する列も作ります。</p>
+</section>
+<section id="演習3都道府県シート" class="level3" data-number="13.3">
+<h3 data-number="13.3" class="anchored" data-anchor-id="演習3都道府県シート"><span class="header-section-number">13.3</span> 演習3：都道府県シート</h3>
+<p><code>c_pref_gdp.xlsx</code>の全シートをリストとして読み、各シートについて行数、列数、列名、欠損数を一覧化してください。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>pref_sheets <span class="sc">|&gt;</span></span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_names</span>() <span class="sc">|&gt;</span></span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">map</span>(<span class="sc">~</span> <span class="fu">read_excel</span>(pref_path, <span class="at">sheet =</span> .x)) <span class="sc">|&gt;</span></span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">imap_dfr</span>(</span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a>    <span class="sc">~</span> <span class="fu">tibble</span>(</span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a>      <span class="at">sheet =</span> .y,</span>
+<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">rows =</span> <span class="fu">nrow</span>(.x),</span>
+<span id="cb42-8"><a href="#cb42-8" aria-hidden="true" tabindex="-1"></a>      <span class="at">columns =</span> <span class="fu">ncol</span>(.x),</span>
+<span id="cb42-9"><a href="#cb42-9" aria-hidden="true" tabindex="-1"></a>      <span class="at">missing_cells =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(.x))</span>
+<span id="cb42-10"><a href="#cb42-10" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb42-11"><a href="#cb42-11" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="演習4名称による分類" class="level3" data-number="13.4">
+<h3 data-number="13.4" class="anchored" data-anchor-id="演習4名称による分類"><span class="header-section-number">13.4</span> 演習4：名称による分類</h3>
+<p>「山」を含む県と含まない県で農業・林業シェアを比較し、文字列規則だけでは政策的結論を出せない理由を書いてください。</p>
+</section>
+</section>
+<section id="章末チェック" class="level2" data-number="14">
+<h2 data-number="14" class="anchored" data-anchor-id="章末チェック"><span class="header-section-number">14</span> 章末チェック</h2>
+<ul class="task-list">
+<li><label><input type="checkbox">元の文章列を残して清掃列を作っている。</label></li>
+<li><label><input type="checkbox">正規表現の語彙と採用理由を記録している。</label></li>
+<li><label><input type="checkbox">件数と比率を区別している。</label></li>
+<li><label><input type="checkbox">年月を日付型へ変換し、未完成期間を識別している。</label></li>
+<li><label><input type="checkbox">複数シートの構造を確認してから共通処理を適用している。</label></li>
+<li><label><input type="checkbox">文字列判定と実体概念を混同していない。</label></li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

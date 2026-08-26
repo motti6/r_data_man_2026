@@ -1,0 +1,1478 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>第2章 データを自力で取得する – Rデータ操作入門（2026年度版）</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-6ef75a0fa32a0ab5c67dbc0e0e72a034.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+</head>
+
+<body class="nav-sidebar docked quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./chapter2_2026.html">第2章 データを自力で取得する</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Rデータ操作入門（2026年度版）</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Rデータ操作入門（2026年度版）</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./chapter1_2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">第1章 Rと再現可能なデータ分析の基礎</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./chapter2_2026.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">第2章 データを自力で取得する</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./chapter3_2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">第3章 データを整える・集計する・結合する</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./chapter4_2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">第4章 文字列・日付・複数ファイルを扱う</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./chapter5_2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">第5章 ggplot2による実データ可視化</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./chapter6_2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">第6章 総合演習</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./chapter7_2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">第7章 地理データをRで操作する</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./chapter8_2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">第8章 Shinyで地図ダッシュボードを作る</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#この章の到達目標" id="toc-この章の到達目標" class="nav-link active" data-scroll-target="#この章の到達目標"><span class="header-section-number">1</span> この章の到達目標</a></li>
+  <li><a href="#データ分析は取得から始まる" id="toc-データ分析は取得から始まる" class="nav-link" data-scroll-target="#データ分析は取得から始まる"><span class="header-section-number">2</span> データ分析は「取得」から始まる</a></li>
+  <li><a href="#配布された実データを読む" id="toc-配布された実データを読む" class="nav-link" data-scroll-target="#配布された実データを読む"><span class="header-section-number">3</span> 配布された実データを読む</a>
+  <ul class="collapse">
+  <li><a href="#csv国際収支統計" id="toc-csv国際収支統計" class="nav-link" data-scroll-target="#csv国際収支統計"><span class="header-section-number">3.1</span> CSV：国際収支統計</a></li>
+  <li><a href="#csv日米為替" id="toc-csv日米為替" class="nav-link" data-scroll-target="#csv日米為替"><span class="header-section-number">3.2</span> CSV：日米為替</a></li>
+  <li><a href="#excel複数シートを確認する" id="toc-excel複数シートを確認する" class="nav-link" data-scroll-target="#excel複数シートを確認する"><span class="header-section-number">3.3</span> Excel：複数シートを確認する</a></li>
+  <li><a href="#rds型を保って保存する" id="toc-rds型を保って保存する" class="nav-link" data-scroll-target="#rds型を保って保存する"><span class="header-section-number">3.4</span> RDS：型を保って保存する</a></li>
+  </ul></li>
+  <li><a href="#e-stat-api-3.0の全体像" id="toc-e-stat-api-3.0の全体像" class="nav-link" data-scroll-target="#e-stat-api-3.0の全体像"><span class="header-section-number">4</span> e-Stat API 3.0の全体像</a>
+  <ul class="collapse">
+  <li><a href="#アプリケーションidを安全に保存する" id="toc-アプリケーションidを安全に保存する" class="nav-link" data-scroll-target="#アプリケーションidを安全に保存する"><span class="header-section-number">4.1</span> アプリケーションIDを安全に保存する</a></li>
+  </ul></li>
+  <li><a href="#まず1回apiを直接呼んでみる" id="toc-まず1回apiを直接呼んでみる" class="nav-link" data-scroll-target="#まず1回apiを直接呼んでみる"><span class="header-section-number">5</span> まず1回、APIを直接呼んでみる</a></li>
+  <li><a href="#講義用ヘルパーを読み込む" id="toc-講義用ヘルパーを読み込む" class="nav-link" data-scroll-target="#講義用ヘルパーを読み込む"><span class="header-section-number">6</span> 講義用ヘルパーを読み込む</a></li>
+  <li><a href="#手順1統計表を検索する" id="toc-手順1統計表を検索する" class="nav-link" data-scroll-target="#手順1統計表を検索する"><span class="header-section-number">7</span> 手順1：統計表を検索する</a></li>
+  <li><a href="#手順2メタデータを読む" id="toc-手順2メタデータを読む" class="nav-link" data-scroll-target="#手順2メタデータを読む"><span class="header-section-number">8</span> 手順2：メタデータを読む</a></li>
+  <li><a href="#手順3小さく試して取得する" id="toc-手順3小さく試して取得する" class="nav-link" data-scroll-target="#手順3小さく試して取得する"><span class="header-section-number">9</span> 手順3：小さく試して取得する</a></li>
+  <li><a href="#手順4コードをラベルへ変換する" id="toc-手順4コードをラベルへ変換する" class="nav-link" data-scroll-target="#手順4コードをラベルへ変換する"><span class="header-section-number">10</span> 手順4：コードをラベルへ変換する</a></li>
+  <li><a href="#手順5全ページを取得する" id="toc-手順5全ページを取得する" class="nav-link" data-scroll-target="#手順5全ページを取得する"><span class="header-section-number">11</span> 手順5：全ページを取得する</a></li>
+  <li><a href="#手順6取得物とログを保存する" id="toc-手順6取得物とログを保存する" class="nav-link" data-scroll-target="#手順6取得物とログを保存する"><span class="header-section-number">12</span> 手順6：取得物とログを保存する</a></li>
+  <li><a href="#実践人口推計を取得し第5章へ渡す" id="toc-実践人口推計を取得し第5章へ渡す" class="nav-link" data-scroll-target="#実践人口推計を取得し第5章へ渡す"><span class="header-section-number">13</span> 実践：人口推計を取得し、第5章へ渡す</a></li>
+  <li><a href="#パラメータを使ってapi実行を切り替える" id="toc-パラメータを使ってapi実行を切り替える" class="nav-link" data-scroll-target="#パラメータを使ってapi実行を切り替える"><span class="header-section-number">14</span> パラメータを使ってAPI実行を切り替える</a></li>
+  <li><a href="#以後の章で使うデータの選び方" id="toc-以後の章で使うデータの選び方" class="nav-link" data-scroll-target="#以後の章で使うデータの選び方"><span class="header-section-number">15</span> 以後の章で使うデータの選び方</a></li>
+  <li><a href="#api取得時のよくある問題" id="toc-api取得時のよくある問題" class="nav-link" data-scroll-target="#api取得時のよくある問題"><span class="header-section-number">16</span> API取得時のよくある問題</a></li>
+  <li><a href="#演習" id="toc-演習" class="nav-link" data-scroll-target="#演習"><span class="header-section-number">17</span> 演習</a>
+  <ul class="collapse">
+  <li><a href="#演習1ファイルの品質確認" id="toc-演習1ファイルの品質確認" class="nav-link" data-scroll-target="#演習1ファイルの品質確認"><span class="header-section-number">17.1</span> 演習1：ファイルの品質確認</a></li>
+  <li><a href="#演習2e-statで統計表を探す" id="toc-演習2e-statで統計表を探す" class="nav-link" data-scroll-target="#演習2e-statで統計表を探す"><span class="header-section-number">17.2</span> 演習2：e-Statで統計表を探す</a></li>
+  <li><a href="#演習3メタデータから取得仕様を作る" id="toc-演習3メタデータから取得仕様を作る" class="nav-link" data-scroll-target="#演習3メタデータから取得仕様を作る"><span class="header-section-number">17.3</span> 演習3：メタデータから取得仕様を作る</a></li>
+  <li><a href="#演習4取得から保存まで" id="toc-演習4取得から保存まで" class="nav-link" data-scroll-target="#演習4取得から保存まで"><span class="header-section-number">17.4</span> 演習4：取得から保存まで</a></li>
+  <li><a href="#演習5次回講義へapiデータを引き渡す" id="toc-演習5次回講義へapiデータを引き渡す" class="nav-link" data-scroll-target="#演習5次回講義へapiデータを引き渡す"><span class="header-section-number">17.5</span> 演習5：次回講義へAPIデータを引き渡す</a></li>
+  </ul></li>
+  <li><a href="#章末チェック" id="toc-章末チェック" class="nav-link" data-scroll-target="#章末チェック"><span class="header-section-number">18</span> 章末チェック</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">第2章 データを自力で取得する</h1>
+<p class="subtitle lead">ファイル入出力とe-Stat API</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="この章の到達目標" class="level2" data-number="1">
+<h2 data-number="1" class="anchored" data-anchor-id="この章の到達目標"><span class="header-section-number">1</span> この章の到達目標</h2>
+<p>この章を終えると、次のことができるようになります。</p>
+<ol type="1">
+<li>CSV、Excel、RDSを、文字コードや列型に注意して読み書きする。</li>
+<li>データの公表元、取得日時、抽出条件を記録する。</li>
+<li>e-Stat APIで統計表を検索し、メタデータを確認してからデータを取得する。</li>
+<li>大規模な取得でページ分割が必要な理由を説明する。</li>
+<li>原データと分析用データを分け、以後の授業で更新可能なデータフローを作る。</li>
+</ol>
+</section>
+<section id="データ分析は取得から始まる" class="level2" data-number="2">
+<h2 data-number="2" class="anchored" data-anchor-id="データ分析は取得から始まる"><span class="header-section-number">2</span> データ分析は「取得」から始まる</h2>
+<p>分析結果は、コードだけでなく入力データにも依存します。最低限、次を記録します。</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>項目</th>
+<th>記録例</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>公表元</td>
+<td>e-Stat、内閣府、IMFなど</td>
+</tr>
+<tr class="even">
+<td>統計・表の名称</td>
+<td>県民経済計算、国際収支統計など</td>
+</tr>
+<tr class="odd">
+<td>識別子</td>
+<td><code>statsDataId</code>、表番号、ファイル名</td>
+</tr>
+<tr class="even">
+<td>取得日時</td>
+<td>タイムゾーンを含む日時</td>
+</tr>
+<tr class="odd">
+<td>抽出条件</td>
+<td>地域、系列、期間、単位</td>
+</tr>
+<tr class="even">
+<td>加工内容</td>
+<td>欠損補完、単位変換、季節調整など</td>
+</tr>
+<tr class="odd">
+<td>保存先</td>
+<td>原データ、整形済みデータ、最終出力</td>
+</tr>
+</tbody>
+</table>
+<p>この教材では、次の3層を区別します。</p>
+<pre class="text"><code>data_raw/      入手したままのファイル。原則として上書きしない
+data_clean/    コードで整形し、再生成できるデータ
+output_data/   レポート掲載用の表や分析結果</code></pre>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>APIは「最新値を取る魔法」ではない
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>APIは、公表元が定めた入口と形式でデータを受け取る契約です。取得できても、統計の定義、改定、単位、季節調整、速報・確報の区別を理解しなければ分析には使えません。</p>
+</div>
+</div>
+</section>
+<section id="配布された実データを読む" class="level2" data-number="3">
+<h2 data-number="3" class="anchored" data-anchor-id="配布された実データを読む"><span class="header-section-number">3</span> 配布された実データを読む</h2>
+<section id="csv国際収支統計" class="level3" data-number="3.1">
+<h3 data-number="3.1" class="anchored" data-anchor-id="csv国際収支統計"><span class="header-section-number">3.1</span> CSV：国際収支統計</h3>
+<p><code>a_bop.csv</code> はUTF-8で保存されています。文字コードを明示します。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>bop_path <span class="ot">&lt;-</span> <span class="fu">file.path</span>(<span class="st">"data_raw"</span>, <span class="st">"a_bop.csv"</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>bop_raw <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  bop_path,</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">locale =</span> <span class="fu">locale</span>(<span class="at">encoding =</span> <span class="st">"UTF-8"</span>),</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">trim_ws =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">na =</span> <span class="fu">c</span>(<span class="st">""</span>, <span class="st">"NA"</span>),</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_col_types =</span> <span class="cn">FALSE</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(bop_raw)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 351
+Columns: 10
+$ year                   &lt;dbl&gt; 1996, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
+$ month                  &lt;dbl&gt; 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3,…
+$ current_account        &lt;dbl&gt; 5414, 6392, 8847, 6295, 4814, 5131, 5902, 6401,…
+$ goods_services_balance &lt;dbl&gt; 2211, 2954, 4596, 1495, 197, 608, 1374, 2151, 1…
+$ trade_balance          &lt;lgl&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
+$ exports                &lt;dbl&gt; 33994, 35080, 36206, 34530, 34336, 35122, 35146…
+$ imports                &lt;dbl&gt; 26083, 26690, 26533, 28133, 28547, 28163, 28085…
+$ services_balance       &lt;dbl&gt; -5700, -5435, -5077, -4903, -5591, -6351, -5687…
+$ primary_income         &lt;dbl&gt; 3916, 4660, 4851, 5610, 5544, 5295, 5376, 5141,…
+$ secondary_income       &lt;dbl&gt; -713, -1223, -599, -810, -927, -772, -848, -891…</code></pre>
+</div>
+</div>
+<p>文字化けした場合は、推測だけでコードを書き換えず、候補を確認します。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">guess_encoding</span>(bop_path)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="csv日米為替" class="level3" data-number="3.2">
+<h3 data-number="3.2" class="anchored" data-anchor-id="csv日米為替"><span class="header-section-number">3.2</span> CSV：日米為替</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>fx_path <span class="ot">&lt;-</span> <span class="fu">file.path</span>(<span class="st">"data_raw"</span>, <span class="st">"a_usdjpy.csv"</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>fx_raw <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  fx_path,</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">locale =</span> <span class="fu">locale</span>(<span class="at">encoding =</span> <span class="st">"UTF-8"</span>),</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">trim_ws =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">na =</span> <span class="fu">c</span>(<span class="st">""</span>, <span class="st">"NA"</span>),</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_col_types =</span> <span class="cn">FALSE</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(fx_raw)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 351
+Columns: 3
+$ year    &lt;dbl&gt; 1996, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, 1997, NA, NA…
+$ month   &lt;dbl&gt; 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6, 7, 8,…
+$ usd_jpy &lt;dbl&gt; 105.836, 105.726, 105.855, 107.463, 106.506, 108.858, 109.323,…</code></pre>
+</div>
+</div>
+<p>CSVを読んだら、最低限、次を確認します。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">list</span>(</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">bop_dim =</span> <span class="fu">dim</span>(bop_raw),</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">fx_dim =</span> <span class="fu">dim</span>(fx_raw),</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">bop_names =</span> <span class="fu">names</span>(bop_raw),</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">fx_names =</span> <span class="fu">names</span>(fx_raw)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$bop_dim
+[1] 351  10
+
+$fx_dim
+[1] 351   3
+
+$bop_names
+ [1] "year"                   "month"                  "current_account"       
+ [4] "goods_services_balance" "trade_balance"          "exports"               
+ [7] "imports"                "services_balance"       "primary_income"        
+[10] "secondary_income"      
+
+$fx_names
+[1] "year"    "month"   "usd_jpy"</code></pre>
+</div>
+</div>
+</section>
+<section id="excel複数シートを確認する" class="level3" data-number="3.3">
+<h3 data-number="3.3" class="anchored" data-anchor-id="excel複数シートを確認する"><span class="header-section-number">3.3</span> Excel：複数シートを確認する</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>analysis_path <span class="ot">&lt;-</span> <span class="fu">file.path</span>(<span class="st">"data_raw"</span>, <span class="st">"analysis_data.xlsx"</span>)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">excel_sheets</span>(analysis_path)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "trade_query"    "trade"          "tx_data"        "pharma_finance"
+[5] "pharma_patent"  "bop"            "watcher_text"  </code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>trade_snapshot <span class="ot">&lt;-</span> <span class="fu">read_excel</span>(</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  analysis_path,</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">sheet =</span> <span class="st">"trade"</span>,</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">skip =</span> <span class="dv">3</span>,</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">col_names =</span> <span class="fu">c</span>(<span class="st">"frequency"</span>, <span class="st">"period"</span>, <span class="st">"exports"</span>, <span class="st">"imports"</span>)</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>trade_snapshot <span class="sc">|&gt;</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_head</span>(<span class="at">n =</span> <span class="dv">5</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 5 × 4
+  frequency period  exports imports
+  &lt;chr&gt;     &lt;chr&gt;     &lt;dbl&gt;   &lt;dbl&gt;
+1 月次(M)   2005/04 5395374 4513059
+2 月次(M)   2005/05 5308579 4643281
+3 月次(M)   2005/06 5336799 4621681
+4 月次(M)   2005/07 5373397 4735510
+5 月次(M)   2005/08 5446641 4904349</code></pre>
+</div>
+</div>
+<p>Excelでは、表題、単位、注記が表の上部に置かれていることがあります。<code>skip</code>で読み飛ばす前に、元ファイルを目で確認し、何行を除いたか記録します。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>weo_sheets <span class="ot">&lt;-</span> <span class="fu">excel_sheets</span>(<span class="fu">file.path</span>(<span class="st">"data_raw"</span>, <span class="st">"b_weo.xlsx"</span>))</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>weo_sheets</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "weo"       "group_map"</code></pre>
+</div>
+</div>
+</section>
+<section id="rds型を保って保存する" class="level3" data-number="3.4">
+<h3 data-number="3.4" class="anchored" data-anchor-id="rds型を保って保存する"><span class="header-section-number">3.4</span> RDS：型を保って保存する</h3>
+<p>整形済みデータをRで再利用する場合、RDSは列型を保ちやすい形式です。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>bop_prepared <span class="ot">&lt;-</span> bop_raw <span class="sc">|&gt;</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fill</span>(year) <span class="sc">|&gt;</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">year =</span> <span class="fu">as.integer</span>(year),</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">month_no =</span> <span class="fu">as.integer</span>(month),</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">date =</span> <span class="fu">make_date</span>(year, month_no, <span class="dv">1</span>)</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">write_rds</span>(</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  bop_prepared,</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">file.path</span>(<span class="st">"data_clean"</span>, <span class="st">"bop_prepared.rds"</span>)</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>bop_again <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">file.path</span>(<span class="st">"data_clean"</span>, <span class="st">"bop_prepared.rds"</span>)</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>CSVは他のソフトと共有しやすく、RDSはRの列型を保ちやすいという違いがあります。目的に応じて使い分けます。</p>
+</section>
+</section>
+<section id="e-stat-api-3.0の全体像" class="level2" data-number="4">
+<h2 data-number="4" class="anchored" data-anchor-id="e-stat-api-3.0の全体像"><span class="header-section-number">4</span> e-Stat API 3.0の全体像</h2>
+<p>e-Stat APIでは、主に次の順序で処理します。</p>
+<ol type="1">
+<li><code>getStatsList</code>：統計表を検索する。</li>
+<li><code>getMetaInfo</code>：表の分類コードとラベルを確認する。</li>
+<li><code>getStatsData</code>：必要な条件で値を取得する。</li>
+<li>結果を保存し、取得ログを残す。</li>
+</ol>
+<p>公式情報：</p>
+<ul>
+<li>e-Stat API利用ガイド：<a href="https://www.e-stat.go.jp/api/api-info/api-guide" class="uri">https://www.e-stat.go.jp/api/api-info/api-guide</a></li>
+<li>e-Stat API 3.0仕様：<a href="https://www.e-stat.go.jp/api/api-info/e-stat-manual3-0" class="uri">https://www.e-stat.go.jp/api/api-info/e-stat-manual3-0</a></li>
+<li>API 3.0 Swagger：<a href="https://api.e-stat.go.jp/swagger-ui/e-statapi3.0.html" class="uri">https://api.e-stat.go.jp/swagger-ui/e-statapi3.0.html</a></li>
+</ul>
+<section id="アプリケーションidを安全に保存する" class="level3" data-number="4.1">
+<h3 data-number="4.1" class="anchored" data-anchor-id="アプリケーションidを安全に保存する"><span class="header-section-number">4.1</span> アプリケーションIDを安全に保存する</h3>
+<p>アプリケーションIDをQMDや共有コードへ直接書かないでください。プロジェクト直下に <code>.Renviron</code> を作り、次のように保存します。</p>
+<pre class="text"><code>ESTAT_APP_ID=ここに自分のアプリケーションID</code></pre>
+<p>この教材には雛形 <code>.Renviron.example</code> があります。コピー後にRを再起動し、設定を確認します。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># IDそのものは表示しない</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="fu">nzchar</span>(<span class="fu">Sys.getenv</span>(<span class="st">"ESTAT_APP_ID"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] FALSE</code></pre>
+</div>
+</div>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>共有時の注意
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><code>.Renviron</code> は <code>.gitignore</code> の対象です。画面共有、GitHub、提出物へアプリケーションIDを載せないようにします。</p>
+</div>
+</div>
+</section>
+</section>
+<section id="まず1回apiを直接呼んでみる" class="level2" data-number="5">
+<h2 data-number="5" class="anchored" data-anchor-id="まず1回apiを直接呼んでみる"><span class="header-section-number">5</span> まず1回、APIを直接呼んでみる</h2>
+<p>ヘルパー関数を使う前に、APIへ何を送って何が返るかを最小例で確認します。次のコードは、統計表情報取得APIへ検索語を送る例です。授業ではR Consoleで1行ずつ実行してください。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>app_id <span class="ot">&lt;-</span> <span class="fu">Sys.getenv</span>(<span class="st">"ESTAT_APP_ID"</span>)</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">nzchar</span>(app_id))</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>request_url <span class="ot">&lt;-</span> <span class="fu">paste0</span>(</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>  <span class="st">"https://api.e-stat.go.jp/rest/3.0/app/json/"</span>,</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>  <span class="st">"getStatsList"</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>req <span class="ot">&lt;-</span> <span class="fu">request</span>(request_url) <span class="sc">|&gt;</span></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">req_url_query</span>(</span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">appId =</span> app_id,</span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">lang =</span> <span class="st">"J"</span>,</span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">searchWord =</span> <span class="st">"県民経済計算"</span>,</span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">limit =</span> <span class="dv">10</span>,</span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">explanationGetFlg =</span> <span class="st">"N"</span></span>
+<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">req_user_agent</span>(<span class="st">"university-r-course-2026"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">req_timeout</span>(<span class="at">seconds =</span> <span class="dv">60</span>)</span>
+<span id="cb20-19"><a href="#cb20-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-20"><a href="#cb20-20" aria-hidden="true" tabindex="-1"></a>resp <span class="ot">&lt;-</span> <span class="fu">req_perform</span>(req)</span>
+<span id="cb20-21"><a href="#cb20-21" aria-hidden="true" tabindex="-1"></a>body <span class="ot">&lt;-</span> <span class="fu">resp_body_json</span>(resp, <span class="at">simplifyVector =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb20-22"><a href="#cb20-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-23"><a href="#cb20-23" aria-hidden="true" tabindex="-1"></a>body<span class="sc">$</span>GET_STATS_LIST<span class="sc">$</span>RESULT</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><code>HTTP 200</code>でも、API本文の<code>RESULT$STATUS</code>にエラーが記録されることがあります。したがって、HTTP応答とe-Stat側のステータスの両方を確認します。また、アプリケーションIDはURLのクエリに入るため、リクエストURL全体を提出物やチャットへ貼り付けないでください。</p>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>最小例で確認する3点
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ol type="1">
+<li>エンドポイントは<code>getStatsList</code>、<code>getMetaInfo</code>、<code>getStatsData</code>のどれか。</li>
+<li>入力はアプリケーションID、統計表ID、検索語、抽出条件のどれか。</li>
+<li>出力本文のどこにステータス、メタデータ、値があるか。</li>
+</ol>
+</div>
+</div>
+</section>
+<section id="講義用ヘルパーを読み込む" class="level2" data-number="6">
+<h2 data-number="6" class="anchored" data-anchor-id="講義用ヘルパーを読み込む"><span class="header-section-number">6</span> 講義用ヘルパーを読み込む</h2>
+<p>APIの仕組みを理解しながら、JSONの形の違いやページ分割を扱うための関数を用意しています。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="fu">file.path</span>(<span class="st">"R"</span>, <span class="st">"estat_helpers.R"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>主な関数は次のとおりです。</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>関数</th>
+<th>役割</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>estat_search_table()</code></td>
+<td>キーワードから統計表を検索</td>
+</tr>
+<tr class="even">
+<td><code>estat_get_metadata()</code></td>
+<td>分類コード、ラベル、単位を取得</td>
+</tr>
+<tr class="odd">
+<td><code>estat_extract_codebook()</code></td>
+<td>メタデータを表形式へ変換</td>
+</tr>
+<tr class="even">
+<td><code>estat_get_all_pages()</code></td>
+<td><code>NEXT_KEY</code>をたどって全ページを取得</td>
+</tr>
+<tr class="odd">
+<td><code>estat_extract_values()</code></td>
+<td>取得値をtibbleへ変換</td>
+</tr>
+<tr class="even">
+<td><code>estat_add_labels()</code></td>
+<td>コードに日本語ラベルを結合</td>
+</tr>
+<tr class="odd">
+<td><code>estat_filter_label()</code></td>
+<td>次元名を決め打ちせず、指定ラベルの行を抽出</td>
+</tr>
+<tr class="even">
+<td><code>estat_download()</code></td>
+<td>検索後の取得・整形を一括実行</td>
+</tr>
+<tr class="odd">
+<td><code>estat_save_download()</code></td>
+<td>原レスポンス、整形値、コード表、ログを保存</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="手順1統計表を検索する" class="level2" data-number="7">
+<h2 data-number="7" class="anchored" data-anchor-id="手順1統計表を検索する"><span class="header-section-number">7</span> 手順1：統計表を検索する</h2>
+<p>例として「県民経済計算」を検索します。APIを実行するチャンクは、通常のプレビューでは動かさないようにしています。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>candidate_tables <span class="ot">&lt;-</span> <span class="fu">estat_search_table</span>(</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">search_word =</span> <span class="st">"県民経済計算"</span>,</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">limit =</span> <span class="dv">100</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>candidate_tables <span class="sc">|&gt;</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(stats_data_id, stat_name, title, cycle, survey_date, updated_date) <span class="sc">|&gt;</span></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="at">n =</span> <span class="dv">30</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>検索結果の1行目を無条件に選んではいけません。タイトル、周期、調査年月、更新日を確認し、目的に合う <code>stats_data_id</code> を選びます。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>candidate_tables <span class="sc">|&gt;</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">str_detect</span>(title, <span class="st">"県内総生産|県民所得"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="手順2メタデータを読む" class="level2" data-number="8">
+<h2 data-number="8" class="anchored" data-anchor-id="手順2メタデータを読む"><span class="header-section-number">8</span> 手順2：メタデータを読む</h2>
+<p>選んだ統計表の識別子を設定します。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>stats_data_id <span class="ot">&lt;-</span> <span class="st">"検索結果から選んだID"</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>meta_root <span class="ot">&lt;-</span> <span class="fu">estat_get_metadata</span>(stats_data_id)</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>codebook <span class="ot">&lt;-</span> <span class="fu">estat_extract_codebook</span>(meta_root)</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>codebook <span class="sc">|&gt;</span></span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(dimension_id, dimension_name)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>各統計表は、表章項目、カテゴリ、地域、時間などの次元を持ちます。実際のIDは表によって異なるため、固定観念で <code>cat01</code> などを書かず、コード表を確認します。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>codebook <span class="sc">|&gt;</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(dimension_id <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"tab"</span>, <span class="st">"cat01"</span>, <span class="st">"cat02"</span>, <span class="st">"area"</span>, <span class="st">"time"</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(dimension_id, dimension_name, code, label, unit, parent_code) <span class="sc">|&gt;</span></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="at">n =</span> <span class="dv">100</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>ここで確認することは、次の5点です。</p>
+<ol type="1">
+<li>欲しい系列のコードは何か。</li>
+<li>地域コードは全国か都道府県か。</li>
+<li>時間コードが年・年度・月のどれか。</li>
+<li>値の単位は何か。</li>
+<li>上位分類と内訳を重複して取得していないか。</li>
+</ol>
+</section>
+<section id="手順3小さく試して取得する" class="level2" data-number="9">
+<h2 data-number="9" class="anchored" data-anchor-id="手順3小さく試して取得する"><span class="header-section-number">9</span> 手順3：小さく試して取得する</h2>
+<p>最初から全期間・全地域を取得せず、数地域・数期間で列構造と単位を確認します。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>first_page <span class="ot">&lt;-</span> <span class="fu">estat_get_data_page</span>(</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">stats_data_id =</span> stats_data_id,</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">limit =</span> <span class="dv">1000</span>,</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># 次のコードはメタデータを見て置き換える</span></span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">cdArea =</span> <span class="st">"地域コード"</span>,</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">cdTimeFrom =</span> <span class="st">"開始時点"</span>,</span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">cdTimeTo =</span> <span class="st">"終了時点"</span></span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>small_values <span class="ot">&lt;-</span> <span class="fu">estat_extract_values</span>(first_page)</span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>small_values</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>取得条件は、表の次元に合わせて <code>cdCat01</code>、<code>cdArea</code>、<code>cdTimeFrom</code> などを追加します。存在しない次元を指定するとエラーになります。</p>
+</section>
+<section id="手順4コードをラベルへ変換する" class="level2" data-number="10">
+<h2 data-number="10" class="anchored" data-anchor-id="手順4コードをラベルへ変換する"><span class="header-section-number">10</span> 手順4：コードをラベルへ変換する</h2>
+<p>APIの値にはコードが含まれます。コード表を結合して、人が読めるラベルを付けます。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>small_labeled <span class="ot">&lt;-</span> <span class="fu">estat_add_labels</span>(small_values, codebook)</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>small_labeled <span class="sc">|&gt;</span></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="fu">ends_with</span>(<span class="st">"_label"</span>), value, unit, annotation) <span class="sc">|&gt;</span></span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_head</span>(<span class="at">n =</span> <span class="dv">20</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>ラベルを付けた後も、分析キーとして元のコード列を残します。表記変更があってもコードの方が安定している場合があるためです。</p>
+</section>
+<section id="手順5全ページを取得する" class="level2" data-number="11">
+<h2 data-number="11" class="anchored" data-anchor-id="手順5全ページを取得する"><span class="header-section-number">11</span> 手順5：全ページを取得する</h2>
+<p>結果件数が上限を超えると、レスポンスに <code>NEXT_KEY</code> が返ります。講義用関数は、その値を次の <code>startPosition</code> として繰り返し取得します。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>pages <span class="ot">&lt;-</span> <span class="fu">estat_get_all_pages</span>(</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">stats_data_id =</span> stats_data_id,</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">limit =</span> <span class="dv">100000</span>,</span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">cdArea =</span> <span class="st">"必要な地域コード"</span>,</span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">cdTimeFrom =</span> <span class="st">"開始時点"</span>,</span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">cdTimeTo =</span> <span class="st">"終了時点"</span></span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(pages)</span>
+<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a>all_values <span class="ot">&lt;-</span> pages <span class="sc">|&gt;</span></span>
+<span id="cb28-12"><a href="#cb28-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">map</span>(estat_extract_values) <span class="sc">|&gt;</span></span>
+<span id="cb28-13"><a href="#cb28-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list_rbind</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>取得量を先に減らす
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>ページ分割を実装していても、不要な全表取得は避けます。分析に必要な系列、地域、期間をメタデータから選び、サーバー側で絞り込みます。</p>
+</div>
+</div>
+</section>
+<section id="手順6取得物とログを保存する" class="level2" data-number="12">
+<h2 data-number="12" class="anchored" data-anchor-id="手順6取得物とログを保存する"><span class="header-section-number">12</span> 手順6：取得物とログを保存する</h2>
+<p>便利関数を使うと、メタデータ、全ページ、値、ラベル付きデータをまとめて取得できます。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>download <span class="ot">&lt;-</span> <span class="fu">estat_download</span>(</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">stats_data_id =</span> stats_data_id,</span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">limit =</span> <span class="dv">100000</span>,</span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">cdArea =</span> <span class="st">"必要な地域コード"</span>,</span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">cdTimeFrom =</span> <span class="st">"開始時点"</span>,</span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">cdTimeTo =</span> <span class="st">"終了時点"</span></span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a>paths <span class="ot">&lt;-</span> <span class="fu">estat_save_download</span>(</span>
+<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">download =</span> download,</span>
+<span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">stem =</span> <span class="st">"prefectural_accounts_example"</span>,</span>
+<span id="cb29-12"><a href="#cb29-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">raw_dir =</span> <span class="fu">file.path</span>(<span class="st">"data_raw"</span>, <span class="st">"estat"</span>),</span>
+<span id="cb29-13"><a href="#cb29-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">clean_dir =</span> <span class="st">"data_clean"</span></span>
+<span id="cb29-14"><a href="#cb29-14" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb29-15"><a href="#cb29-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-16"><a href="#cb29-16" aria-hidden="true" tabindex="-1"></a>paths</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>保存されるものは次のとおりです。</p>
+<ul>
+<li>APIレスポンスのJSON/RDS：取得時点のレスポンス。JSONは目視・他言語向け、RDSはRでの再利用向け</li>
+<li>ラベル付きデータのCSV/RDS：分析用データ</li>
+<li>コード表CSV：分類と単位の根拠</li>
+<li>取得ログCSV：ID、取得日時、条件、ページ数</li>
+</ul>
+</section>
+<section id="実践人口推計を取得し第5章へ渡す" class="level2" data-number="13">
+<h2 data-number="13" class="anchored" data-anchor-id="実践人口推計を取得し第5章へ渡す"><span class="header-section-number">13</span> 実践：人口推計を取得し、第5章へ渡す</h2>
+<p>ここでは、e-Statの人口推計「都道府県、年齢（5歳階級）、男女別人口」をAPIから取得します。使用する統計表表示IDは <code>0003448237</code> です。第5章では、このうち2020年の都道府県別総人口を県民経済計算と結合し、一人当たりGDPを作ります。</p>
+<p>最初にメタデータだけを確認します。次元名やコードを先に見る習慣を付けてください。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>population_stats_id <span class="ot">&lt;-</span> <span class="st">"0003448237"</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>population_meta <span class="ot">&lt;-</span> <span class="fu">estat_get_metadata</span>(population_stats_id)</span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>population_codebook <span class="ot">&lt;-</span> <span class="fu">estat_extract_codebook</span>(population_meta)</span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>population_codebook <span class="sc">|&gt;</span></span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(dimension_id, dimension_name)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>主要なラベルがどの次元に属するか確認します。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>population_codebook <span class="sc">|&gt;</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(</span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>    label <span class="sc">%in%</span> <span class="fu">c</span>(</span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>      <span class="st">"人口"</span>, <span class="st">"男女計"</span>, <span class="st">"総数"</span>, <span class="st">"総人口"</span>,</span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>      <span class="st">"2020年10月1日現在"</span>, <span class="st">"東京都"</span>, <span class="st">"北海道"</span></span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(dimension_id, dimension_name, code, label, unit, parent_code)</span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a>population_time_2020 <span class="ot">&lt;-</span> population_codebook <span class="sc">|&gt;</span></span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(</span>
+<span id="cb31-12"><a href="#cb31-12" aria-hidden="true" tabindex="-1"></a>    dimension_id <span class="sc">==</span> <span class="st">"time"</span>,</span>
+<span id="cb31-13"><a href="#cb31-13" aria-hidden="true" tabindex="-1"></a>    label <span class="sc">==</span> <span class="st">"2020年10月1日現在"</span></span>
+<span id="cb31-14"><a href="#cb31-14" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb31-15"><a href="#cb31-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pull</span>(code)</span>
+<span id="cb31-16"><a href="#cb31-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-17"><a href="#cb31-17" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">length</span>(population_time_2020) <span class="sc">==</span> <span class="dv">1</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>次に値を取得します。メタデータから得た時間コードを<code>cdTimeFrom</code>と<code>cdTimeTo</code>へ渡し、2020年だけをサーバー側で絞り込みます。講義ではAPIへの負荷を避けるため、取得は一度だけ行い、レスポンスと整形済みデータを保存します。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>population_download <span class="ot">&lt;-</span> <span class="fu">estat_download</span>(</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">stats_data_id =</span> population_stats_id,</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">limit =</span> <span class="dv">100000</span>,</span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">cdTimeFrom =</span> population_time_2020,</span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">cdTimeTo =</span> population_time_2020</span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a>population_download<span class="sc">$</span>data <span class="sc">|&gt;</span></span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="fu">ends_with</span>(<span class="st">"_label"</span>), value, unit) <span class="sc">|&gt;</span></span>
+<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_head</span>(<span class="at">n =</span> <span class="dv">10</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>ラベルの属する列を <code>cat01</code> などに決め打ちせず、メタデータから付けたラベルを順に使って抽出します。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>pref_population_2020 <span class="ot">&lt;-</span> population_download<span class="sc">$</span>data <span class="sc">|&gt;</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">estat_filter_label</span>(<span class="st">"人口"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">estat_filter_label</span>(<span class="st">"男女計"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">estat_filter_label</span>(<span class="st">"総数"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">estat_filter_label</span>(<span class="st">"総人口"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">estat_filter_label</span>(<span class="st">"2020年10月1日現在"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(</span>
+<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a>    <span class="sc">!</span><span class="fu">is.na</span>(area_label),</span>
+<span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">str_detect</span>(area_label, <span class="st">"(都|道|府|県)$"</span>)</span>
+<span id="cb33-10"><a href="#cb33-10" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb33-11"><a href="#cb33-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(</span>
+<span id="cb33-12"><a href="#cb33-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">code =</span> <span class="fu">str_sub</span>(area, <span class="dv">1</span>, <span class="dv">2</span>),</span>
+<span id="cb33-13"><a href="#cb33-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">pref =</span> area_label,</span>
+<span id="cb33-14"><a href="#cb33-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">population =</span> <span class="fu">case_when</span>(</span>
+<span id="cb33-15"><a href="#cb33-15" aria-hidden="true" tabindex="-1"></a>      unit <span class="sc">==</span> <span class="st">"人"</span> <span class="sc">~</span> value,</span>
+<span id="cb33-16"><a href="#cb33-16" aria-hidden="true" tabindex="-1"></a>      unit <span class="sc">==</span> <span class="st">"千人"</span> <span class="sc">~</span> value <span class="sc">*</span> <span class="dv">1000</span>,</span>
+<span id="cb33-17"><a href="#cb33-17" aria-hidden="true" tabindex="-1"></a>      <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA_real_</span></span>
+<span id="cb33-18"><a href="#cb33-18" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb33-19"><a href="#cb33-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">original_value =</span> value,</span>
+<span id="cb33-20"><a href="#cb33-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">original_unit =</span> unit,</span>
+<span id="cb33-21"><a href="#cb33-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">time =</span> time_label,</span>
+<span id="cb33-22"><a href="#cb33-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">stats_data_id =</span> population_stats_id</span>
+<span id="cb33-23"><a href="#cb33-23" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb33-24"><a href="#cb33-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(code)</span>
+<span id="cb33-25"><a href="#cb33-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-26"><a href="#cb33-26" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">nrow</span>(pref_population_2020) <span class="sc">!=</span> <span class="dv">47</span>) {</span>
+<span id="cb33-27"><a href="#cb33-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stop</span>(</span>
+<span id="cb33-28"><a href="#cb33-28" aria-hidden="true" tabindex="-1"></a>    <span class="st">"都道府県が47行になりません。ラベル、表の改定、抽出条件を確認してください。"</span></span>
+<span id="cb33-29"><a href="#cb33-29" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb33-30"><a href="#cb33-30" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb33-31"><a href="#cb33-31" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">anyDuplicated</span>(pref_population_2020<span class="sc">$</span>code)) {</span>
+<span id="cb33-32"><a href="#cb33-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stop</span>(<span class="st">"都道府県コードが重複しています。抽出した次元を確認してください。"</span>)</span>
+<span id="cb33-33"><a href="#cb33-33" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb33-34"><a href="#cb33-34" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">any</span>(<span class="fu">is.na</span>(pref_population_2020<span class="sc">$</span>population))) {</span>
+<span id="cb33-35"><a href="#cb33-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stop</span>(<span class="st">"人口の単位を人へ変換できない行があります。unit列を確認してください。"</span>)</span>
+<span id="cb33-36"><a href="#cb33-36" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb33-37"><a href="#cb33-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-38"><a href="#cb33-38" aria-hidden="true" tabindex="-1"></a>pref_population_2020 <span class="sc">|&gt;</span></span>
+<span id="cb33-39"><a href="#cb33-39" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_head</span>(<span class="at">n =</span> <span class="dv">10</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>原レスポンス、コード表、取得ログを保存し、第5章で使う47都道府県の表も別に保存します。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="fu">estat_save_download</span>(</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">download =</span> population_download,</span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">stem =</span> <span class="st">"population_prefecture_2020_base"</span>,</span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">raw_dir =</span> <span class="fu">file.path</span>(<span class="st">"data_raw"</span>, <span class="st">"estat"</span>),</span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">clean_dir =</span> <span class="st">"data_clean"</span></span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(</span>
+<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a>  pref_population_2020,</span>
+<span id="cb34-10"><a href="#cb34-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">file.path</span>(<span class="st">"data_clean"</span>, <span class="st">"pref_population_2020.csv"</span>),</span>
+<span id="cb34-11"><a href="#cb34-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">na =</span> <span class="st">""</span></span>
+<span id="cb34-12"><a href="#cb34-12" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb34-13"><a href="#cb34-13" aria-hidden="true" tabindex="-1"></a><span class="fu">write_rds</span>(</span>
+<span id="cb34-14"><a href="#cb34-14" aria-hidden="true" tabindex="-1"></a>  pref_population_2020,</span>
+<span id="cb34-15"><a href="#cb34-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">file.path</span>(<span class="st">"data_clean"</span>, <span class="st">"pref_population_2020.rds"</span>)</span>
+<span id="cb34-16"><a href="#cb34-16" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>なぜ配布ファイルも残すのか
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>API取得にはアプリケーションID、通信環境、公表元の稼働状況が影響します。授業の再現性は配布スナップショットで確保し、更新能力はAPI実習で身につけます。取得日時と表IDを残せば、値が後に改定された場合も差を説明できます。</p>
+</div>
+</div>
+</section>
+<section id="パラメータを使ってapi実行を切り替える" class="level2" data-number="14">
+<h2 data-number="14" class="anchored" data-anchor-id="パラメータを使ってapi実行を切り替える"><span class="header-section-number">14</span> パラメータを使ってAPI実行を切り替える</h2>
+<p>通常のプレビューで毎回APIへアクセスすると、授業中に結果が変わったり、通信エラーが起きたりします。APIの取得は明示的に実行し、その後は保存済みデータを使います。上の人口推計チャンクは、<code>run_api</code> が <code>true</code> のときだけ実行されます。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>run_api <span class="ot">&lt;-</span> <span class="fu">isTRUE</span>(params<span class="sc">$</span>run_api)</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>has_key <span class="ot">&lt;-</span> <span class="fu">nzchar</span>(<span class="fu">Sys.getenv</span>(<span class="st">"ESTAT_APP_ID"</span>))</span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a><span class="fu">tibble</span>(run_api, has_key)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 2
+  run_api has_key
+  &lt;lgl&gt;   &lt;lgl&gt;  
+1 FALSE   FALSE  </code></pre>
+</div>
+</div>
+<p>PowerShellから実行する例です。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb37"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>quarto render chapter2_2026<span class="op">.</span><span class="fu">qmd</span> <span class="op">-</span>P run_api<span class="op">:</span>true</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>ただし、授業ではR Consoleで検索、メタデータ確認、小規模取得を一つずつ実行する方が、何を取得したか理解しやすくなります。</p>
+</section>
+<section id="以後の章で使うデータの選び方" class="level2" data-number="15">
+<h2 data-number="15" class="anchored" data-anchor-id="以後の章で使うデータの選び方"><span class="header-section-number">15</span> 以後の章で使うデータの選び方</h2>
+<p>更新済みファイルがあればそれを使い、なければ配布スナップショットを使う関数を作れます。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>read_prefer_updated <span class="ot">&lt;-</span> <span class="cf">function</span>(</span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>    updated_path,</span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>    snapshot_reader,</span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">required_columns =</span> <span class="fu">character</span>()) {</span>
+<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a>  data <span class="ot">&lt;-</span> <span class="cf">if</span> (<span class="fu">file.exists</span>(updated_path)) {</span>
+<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">"data_cleanの更新済みデータを使用します: "</span>, updated_path)</span>
+<span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">read_rds</span>(updated_path)</span>
+<span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb38-9"><a href="#cb38-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">"配布スナップショットを使用します。"</span>)</span>
+<span id="cb38-10"><a href="#cb38-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">snapshot_reader</span>()</span>
+<span id="cb38-11"><a href="#cb38-11" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb38-12"><a href="#cb38-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-13"><a href="#cb38-13" aria-hidden="true" tabindex="-1"></a>  missing_columns <span class="ot">&lt;-</span> <span class="fu">setdiff</span>(required_columns, <span class="fu">names</span>(data))</span>
+<span id="cb38-14"><a href="#cb38-14" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">length</span>(missing_columns) <span class="sc">&gt;</span> <span class="dv">0</span>) {</span>
+<span id="cb38-15"><a href="#cb38-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">stop</span>(</span>
+<span id="cb38-16"><a href="#cb38-16" aria-hidden="true" tabindex="-1"></a>      <span class="st">"必要な列がありません: "</span>,</span>
+<span id="cb38-17"><a href="#cb38-17" aria-hidden="true" tabindex="-1"></a>      <span class="fu">paste</span>(missing_columns, <span class="at">collapse =</span> <span class="st">", "</span>),</span>
+<span id="cb38-18"><a href="#cb38-18" aria-hidden="true" tabindex="-1"></a>      <span class="at">call. =</span> <span class="cn">FALSE</span></span>
+<span id="cb38-19"><a href="#cb38-19" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb38-20"><a href="#cb38-20" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb38-21"><a href="#cb38-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-22"><a href="#cb38-22" aria-hidden="true" tabindex="-1"></a>  data</span>
+<span id="cb38-23"><a href="#cb38-23" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>bop_for_analysis <span class="ot">&lt;-</span> <span class="fu">read_prefer_updated</span>(</span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">updated_path =</span> <span class="fu">file.path</span>(<span class="st">"data_clean"</span>, <span class="st">"bop_updated.rds"</span>),</span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">snapshot_reader =</span> <span class="cf">function</span>() {</span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">read_csv</span>(</span>
+<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a>      <span class="fu">file.path</span>(<span class="st">"data_raw"</span>, <span class="st">"a_bop.csv"</span>),</span>
+<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a>      <span class="at">locale =</span> <span class="fu">locale</span>(<span class="at">encoding =</span> <span class="st">"UTF-8"</span>),</span>
+<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">show_col_types =</span> <span class="cn">FALSE</span></span>
+<span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb39-9"><a href="#cb39-9" aria-hidden="true" tabindex="-1"></a>  },</span>
+<span id="cb39-10"><a href="#cb39-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">required_columns =</span> <span class="fu">c</span>(<span class="st">"year"</span>, <span class="st">"month"</span>, <span class="st">"exports"</span>, <span class="st">"imports"</span>)</span>
+<span id="cb39-11"><a href="#cb39-11" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>この運用により、講義は安定した配布データで再現でき、学生はAPIで更新する能力も身につけられます。</p>
+</section>
+<section id="api取得時のよくある問題" class="level2" data-number="16">
+<h2 data-number="16" class="anchored" data-anchor-id="api取得時のよくある問題"><span class="header-section-number">16</span> API取得時のよくある問題</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>症状</th>
+<th>確認点</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>ESTAT_APP_IDが設定されていません</code></td>
+<td><code>.Renviron</code>の場所、Rの再起動</td>
+</tr>
+<tr class="even">
+<td>検索結果が多すぎる</td>
+<td>検索語、統計分野、周期、更新日</td>
+</tr>
+<tr class="odd">
+<td>0件になる</td>
+<td>コードをラベルで指定していないか、期間形式</td>
+</tr>
+<tr class="even">
+<td>値が重複して見える</td>
+<td>上位分類と内訳、単位、表章項目</td>
+</tr>
+<tr class="odd">
+<td>行数が想定より少ない</td>
+<td><code>NEXT_KEY</code>、取得上限、条件</td>
+</tr>
+<tr class="even">
+<td>数値が文字列になる</td>
+<td>記号、秘匿値、欠測記号、注釈</td>
+</tr>
+<tr class="odd">
+<td>昨日と値が違う</td>
+<td>速報・確報、遡及改定、取得日時</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="演習" class="level2" data-number="17">
+<h2 data-number="17" class="anchored" data-anchor-id="演習"><span class="header-section-number">17</span> 演習</h2>
+<section id="演習1ファイルの品質確認" class="level3" data-number="17.1">
+<h3 data-number="17.1" class="anchored" data-anchor-id="演習1ファイルの品質確認"><span class="header-section-number">17.1</span> 演習1：ファイルの品質確認</h3>
+<p><code>a_bop.csv</code> と <code>a_usdjpy.csv</code> を読み、次を表にしてください。</p>
+<ul>
+<li>行数と列数</li>
+<li>列名</li>
+<li>列ごとの型</li>
+<li>欠損数</li>
+<li>最初と最後の年月</li>
+</ul>
+</section>
+<section id="演習2e-statで統計表を探す" class="level3" data-number="17.2">
+<h3 data-number="17.2" class="anchored" data-anchor-id="演習2e-statで統計表を探す"><span class="header-section-number">17.2</span> 演習2：e-Statで統計表を探す</h3>
+<p>関心のある政府統計を一つ決め、<code>estat_search_table()</code>で候補を探してください。採用した表について、次を記録します。</p>
+<ul>
+<li><code>stats_data_id</code></li>
+<li>統計名と表題</li>
+<li>周期</li>
+<li>更新日</li>
+<li>採用理由</li>
+<li>採用しなかった似た表との違い</li>
+</ul>
+</section>
+<section id="演習3メタデータから取得仕様を作る" class="level3" data-number="17.3">
+<h3 data-number="17.3" class="anchored" data-anchor-id="演習3メタデータから取得仕様を作る"><span class="header-section-number">17.3</span> 演習3：メタデータから取得仕様を作る</h3>
+<p>演習2で選んだ表について、コード表から次を抽出してください。</p>
+<ul>
+<li>分析に使う系列コード</li>
+<li>地域コード</li>
+<li>期間コード</li>
+<li>単位</li>
+<li>注記または欠測記号</li>
+</ul>
+</section>
+<section id="演習4取得から保存まで" class="level3" data-number="17.4">
+<h3 data-number="17.4" class="anchored" data-anchor-id="演習4取得から保存まで"><span class="header-section-number">17.4</span> 演習4：取得から保存まで</h3>
+<p>3地域以上、5時点以上、1系列以上をAPIから取得し、次を保存してください。</p>
+<ol type="1">
+<li>原レスポンス</li>
+<li>ラベル付き整形データ</li>
+<li>コード表</li>
+<li>取得ログ</li>
+<li>データの内容を説明する100字程度のREADME</li>
+</ol>
+</section>
+<section id="演習5次回講義へapiデータを引き渡す" class="level3" data-number="17.5">
+<h3 data-number="17.5" class="anchored" data-anchor-id="演習5次回講義へapiデータを引き渡す"><span class="header-section-number">17.5</span> 演習5：次回講義へAPIデータを引き渡す</h3>
+<p>次回以降で使いたい政府統計を一つ選び、API取得後の<strong>データ契約</strong>を決めてください。</p>
+<ul>
+<li>1行の観測単位</li>
+<li>必須列名と型</li>
+<li>キー列と重複の許否</li>
+<li>単位</li>
+<li>対象期間</li>
+<li>欠測値の表現</li>
+<li>保存ファイル名</li>
+</ul>
+<p>推奨例は、この章の人口推計です。<code>pref_population_2020.csv</code>について、<code>code</code>、<code>pref</code>、<code>population</code>が必須で、都道府県コードが一意、47行であることを検査します。余裕があれば、県民経済計算や国際収支についても候補表を検索し、次回講義で使える整形済みファイルとREADMEを準備してください。</p>
+</section>
+</section>
+<section id="章末チェック" class="level2" data-number="18">
+<h2 data-number="18" class="anchored" data-anchor-id="章末チェック"><span class="header-section-number">18</span> 章末チェック</h2>
+<ul class="task-list">
+<li><label><input type="checkbox">文字コードと欠損記号を明示してCSVを読める。</label></li>
+<li><label><input type="checkbox">Excelのシート名と表頭を確認してから読み込める。</label></li>
+<li><label><input type="checkbox">APIキーをコードへ直接書かず、環境変数で管理できる。</label></li>
+<li><label><input type="checkbox">統計表検索、メタデータ確認、小規模取得、全件取得の順序を説明できる。</label></li>
+<li><label><input type="checkbox">コードとラベルを両方残せる。</label></li>
+<li><label><input type="checkbox">取得日時、条件、単位、改定可能性を記録できる。</label></li>
+<li><label><input type="checkbox">後続章へ渡すデータの観測単位、必須列、キーを定義できる。</label></li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

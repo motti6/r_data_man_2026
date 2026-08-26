@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="">
+
+<title>第1章 Rと再現可能なデータ分析の基礎 – Rデータ操作入門（2026年度版）</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-6ef75a0fa32a0ab5c67dbc0e0e72a034.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+</head>
+
+<body class="nav-sidebar docked quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./chapter1_2026.html">第1章 Rと再現可能なデータ分析の基礎</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Rデータ操作入門（2026年度版）</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Rデータ操作入門（2026年度版）</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./chapter1_2026.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">第1章 Rと再現可能なデータ分析の基礎</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./chapter2_2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">第2章 データを自力で取得する</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./chapter3_2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">第3章 データを整える・集計する・結合する</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./chapter4_2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">第4章 文字列・日付・複数ファイルを扱う</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./chapter5_2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">第5章 ggplot2による実データ可視化</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./chapter6_2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">第6章 総合演習</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./chapter7_2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">第7章 地理データをRで操作する</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./chapter8_2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">第8章 Shinyで地図ダッシュボードを作る</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#この章の到達目標" id="toc-この章の到達目標" class="nav-link active" data-scroll-target="#この章の到達目標"><span class="header-section-number">1</span> この章の到達目標</a></li>
+  <li><a href="#ai時代にrを学ぶ理由" id="toc-ai時代にrを学ぶ理由" class="nav-link" data-scroll-target="#ai時代にrを学ぶ理由"><span class="header-section-number">2</span> AI時代にRを学ぶ理由</a></li>
+  <li><a href="#ridequartoの役割" id="toc-ridequartoの役割" class="nav-link" data-scroll-target="#ridequartoの役割"><span class="header-section-number">3</span> R、IDE、Quartoの役割</a></li>
+  <li><a href="#初回セットアップ" id="toc-初回セットアップ" class="nav-link" data-scroll-target="#初回セットアップ"><span class="header-section-number">4</span> 初回セットアップ</a></li>
+  <li><a href="#プロジェクトと相対パス" id="toc-プロジェクトと相対パス" class="nav-link" data-scroll-target="#プロジェクトと相対パス"><span class="header-section-number">5</span> プロジェクトと相対パス</a></li>
+  <li><a href="#この章で使う実データ" id="toc-この章で使う実データ" class="nav-link" data-scroll-target="#この章で使う実データ"><span class="header-section-number">6</span> この章で使う実データ</a>
+  <ul class="collapse">
+  <li><a href="#まず構造を確認する" id="toc-まず構造を確認する" class="nav-link" data-scroll-target="#まず構造を確認する"><span class="header-section-number">6.1</span> まず構造を確認する</a></li>
+  </ul></li>
+  <li><a href="#オブジェクトと代入" id="toc-オブジェクトと代入" class="nav-link" data-scroll-target="#オブジェクトと代入"><span class="header-section-number">7</span> オブジェクトと代入</a></li>
+  <li><a href="#基本的な型" id="toc-基本的な型" class="nav-link" data-scroll-target="#基本的な型"><span class="header-section-number">8</span> 基本的な型</a></li>
+  <li><a href="#基本的な演算" id="toc-基本的な演算" class="nav-link" data-scroll-target="#基本的な演算"><span class="header-section-number">9</span> 基本的な演算</a>
+  <ul class="collapse">
+  <li><a href="#四則演算" id="toc-四則演算" class="nav-link" data-scroll-target="#四則演算"><span class="header-section-number">9.1</span> 四則演算</a></li>
+  <li><a href="#列同士の演算" id="toc-列同士の演算" class="nav-link" data-scroll-target="#列同士の演算"><span class="header-section-number">9.2</span> 列同士の演算</a></li>
+  </ul></li>
+  <li><a href="#条件式" id="toc-条件式" class="nav-link" data-scroll-target="#条件式"><span class="header-section-number">10</span> 条件式</a></li>
+  <li><a href="#ベクトルとデータフレーム" id="toc-ベクトルとデータフレーム" class="nav-link" data-scroll-target="#ベクトルとデータフレーム"><span class="header-section-number">11</span> ベクトルとデータフレーム</a></li>
+  <li><a href="#欠損値-na" id="toc-欠損値-na" class="nav-link" data-scroll-target="#欠損値-na"><span class="header-section-number">12</span> 欠損値 <code>NA</code></a></li>
+  <li><a href="#関数を作る" id="toc-関数を作る" class="nav-link" data-scroll-target="#関数を作る"><span class="header-section-number">13</span> 関数を作る</a></li>
+  <li><a href="#エラーとヘルプ" id="toc-エラーとヘルプ" class="nav-link" data-scroll-target="#エラーとヘルプ"><span class="header-section-number">14</span> エラーとヘルプ</a></li>
+  <li><a href="#aiが作ったコードを点検する5問" id="toc-aiが作ったコードを点検する5問" class="nav-link" data-scroll-target="#aiが作ったコードを点検する5問"><span class="header-section-number">15</span> AIが作ったコードを点検する5問</a></li>
+  <li><a href="#演習" id="toc-演習" class="nav-link" data-scroll-target="#演習"><span class="header-section-number">16</span> 演習</a>
+  <ul class="collapse">
+  <li><a href="#問1" id="toc-問1" class="nav-link" data-scroll-target="#問1"><span class="header-section-number">16.1</span> 問1</a></li>
+  <li><a href="#問2" id="toc-問2" class="nav-link" data-scroll-target="#問2"><span class="header-section-number">16.2</span> 問2</a></li>
+  <li><a href="#問3" id="toc-問3" class="nav-link" data-scroll-target="#問3"><span class="header-section-number">16.3</span> 問3</a></li>
+  <li><a href="#問4" id="toc-問4" class="nav-link" data-scroll-target="#問4"><span class="header-section-number">16.4</span> 問4</a></li>
+  </ul></li>
+  <li><a href="#章末チェック" id="toc-章末チェック" class="nav-link" data-scroll-target="#章末チェック"><span class="header-section-number">17</span> 章末チェック</a></li>
+  <li><a href="#参考資料" id="toc-参考資料" class="nav-link" data-scroll-target="#参考資料"><span class="header-section-number">18</span> 参考資料</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">第1章 Rと再現可能なデータ分析の基礎</h1>
+<p class="subtitle lead">実データから始めるRデータ操作入門（2026年度版）</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="この章の到達目標" class="level2" data-number="1">
+<h2 data-number="1" class="anchored" data-anchor-id="この章の到達目標"><span class="header-section-number">1</span> この章の到達目標</h2>
+<p>この章を終えると、次のことができるようになります。</p>
+<ol type="1">
+<li>R、Positron/RStudio、Quartoの役割を区別する。</li>
+<li>プロジェクトと相対パスを使って、別のPCでも再現できる分析を作る。</li>
+<li>オブジェクト、型、ベクトル、データフレーム、欠損値を説明する。</li>
+<li>配布されたExcelの実データを読み込み、構造と品質を確認する。</li>
+<li>AIが生成したコードを、実行前後に点検する観点を持つ。</li>
+</ol>
+</section>
+<section id="ai時代にrを学ぶ理由" class="level2" data-number="2">
+<h2 data-number="2" class="anchored" data-anchor-id="ai時代にrを学ぶ理由"><span class="header-section-number">2</span> AI時代にRを学ぶ理由</h2>
+<p>生成AIは、コードのたたき台を短時間で作れます。しかし、実務や研究で必要なのは「文字列としてのコード」ではなく、次の一連の判断です。</p>
+<ul>
+<li>何を一つの観測とするか。</li>
+<li>変数は何を測っているか。</li>
+<li>欠損値や外れ値をどう扱うか。</li>
+<li>集計や結合で行数が不自然に増えていないか。</li>
+<li>結果が元データと定義から説明できるか。</li>
+</ul>
+<p>Rを学ぶ目的は、すべての関数を暗記することではありません。<strong>処理を読める、疑える、修正できる、再実行できる</strong>状態を作ることです。</p>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>授業でのAIの使い方
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>AIには「答えだけ」ではなく、次を伝えて質問します。</p>
+<ul>
+<li>データの列名と型</li>
+<li>目的と期待する完成形</li>
+<li>使ってよいパッケージ</li>
+<li>エラー全文</li>
+<li>自分が確認したこと</li>
+</ul>
+<p>生成されたコードは、一行ずつ意味を説明できる範囲で使います。</p>
+</div>
+</div>
+</section>
+<section id="ridequartoの役割" class="level2" data-number="3">
+<h2 data-number="3" class="anchored" data-anchor-id="ridequartoの役割"><span class="header-section-number">3</span> R、IDE、Quartoの役割</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>道具</th>
+<th>主な役割</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>R</td>
+<td>計算、データ加工、統計分析、可視化を実行する言語・環境</td>
+</tr>
+<tr class="even">
+<td>Positron / RStudio</td>
+<td>Rコード、ファイル、図、ヘルプをまとめて扱うIDE</td>
+</tr>
+<tr class="odd">
+<td>Quarto</td>
+<td>説明文、コード、表、図を一つの文書として再現する仕組み</td>
+</tr>
+</tbody>
+</table>
+<p>Quarto文書では、文章の途中にRコードを置けます。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">+</span> <span class="dv">2</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 3</code></pre>
+</div>
+</div>
+<p>コードと結果を同じ資料に残すことで、「どの数値を、どの処理から作ったか」を追跡できます。</p>
+</section>
+<section id="初回セットアップ" class="level2" data-number="4">
+<h2 data-number="4" class="anchored" data-anchor-id="初回セットアップ"><span class="header-section-number">4</span> 初回セットアップ</h2>
+<p>この教材のプロジェクト直下で、R Consoleから次を一度だけ実行します。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="st">"setup_packages.R"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>インストール後、Quartoのプレビューに必要な主要パッケージを確認します。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">knitr =</span> <span class="fu">requireNamespace</span>(<span class="st">"knitr"</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">rmarkdown =</span> <span class="fu">requireNamespace</span>(<span class="st">"rmarkdown"</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">yaml =</span> <span class="fu">requireNamespace</span>(<span class="st">"yaml"</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">readxl =</span> <span class="fu">requireNamespace</span>(<span class="st">"readxl"</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">dplyr =</span> <span class="fu">requireNamespace</span>(<span class="st">"dplyr"</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="プロジェクトと相対パス" class="level2" data-number="5">
+<h2 data-number="5" class="anchored" data-anchor-id="プロジェクトと相対パス"><span class="header-section-number">5</span> プロジェクトと相対パス</h2>
+<p>教材は次の構造を前提とします。</p>
+<pre class="text"><code>r_data_course_2026/
+├─ chapter1_2026.qmd
+├─ chapter2_2026.qmd
+├─ ...
+├─ data_raw/       # 入手したままの原データ
+├─ data_clean/     # コードで整形したデータ
+├─ output_data/    # 表などの出力
+├─ figures/        # 図の出力
+└─ R/              # 再利用する関数</code></pre>
+<p>プロジェクトを開いたとき、次の相対パスは誰のPCでも同じ意味になります。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>analysis_path <span class="ot">&lt;-</span> <span class="fu">file.path</span>(<span class="st">"data_raw"</span>, <span class="st">"analysis_data.xlsx"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>次のような絶対パスは、別の利用者や別のPCでは通常動きません。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 推奨しない例</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>analysis_path <span class="ot">&lt;-</span> <span class="st">"C:/Users/user_id/Desktop/analysis_data.xlsx"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span><code>setwd()</code>で無理に合わせない
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>作業ディレクトリをコード内で個人のフォルダへ変更すると、他の人の環境で再現できません。プロジェクトを正しく開き、相対パスを使います。</p>
+</div>
+</div>
+</section>
+<section id="この章で使う実データ" class="level2" data-number="6">
+<h2 data-number="6" class="anchored" data-anchor-id="この章で使う実データ"><span class="header-section-number">6</span> この章で使う実データ</h2>
+<p><code>analysis_data.xlsx</code> の <code>tx_data</code> シートを読み込みます。ここから先のデータ分析例は、原則として配布された実データを使います。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readxl)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>analysis_path <span class="ot">&lt;-</span> <span class="fu">file.path</span>(<span class="st">"data_raw"</span>, <span class="st">"analysis_data.xlsx"</span>)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(analysis_path)) {</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stop</span>(<span class="st">"data_raw/analysis_data.xlsx が見つかりません。"</span>)</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="fu">excel_sheets</span>(analysis_path)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "trade_query"    "trade"          "tx_data"        "pharma_finance"
+[5] "pharma_patent"  "bop"            "watcher_text"  </code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>tx <span class="ot">&lt;-</span> <span class="fu">read_excel</span>(analysis_path, <span class="at">sheet =</span> <span class="st">"tx_data"</span>)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>tx</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1,756 × 8
+   title      monthly_rent layout size_sqm building_age floor minutes_to_station
+   &lt;chr&gt;             &lt;dbl&gt; &lt;chr&gt;     &lt;dbl&gt;        &lt;dbl&gt; &lt;dbl&gt;              &lt;dbl&gt;
+ 1 (仮称)キャメル南…         6.58 1K         27.4            1     3                 13
+ 2 (仮称)ヤマケンハ…        20    4LDK      130             10     2                 25
+ 3 ABLE早稲田J……         4.1  1K         14.5           38     2                  6
+ 4 AJ新松戸           7.3  1LDK       31.9            5     3                 11
+ 5 AJ新松戸IX         7.3  1LDK       30.1            4     3                  9
+ 6 ART RESID…        16.3  2LDK       55.6            5     9                  2
+ 7 ART RESID…        12.7  1LDK       38              6     5                  3
+ 8 ART　RESID…        13.8  1LDK       41.1            6     7                  5
+ 9 AVANTI HO…         6.7  2LDK       59.2           10     2                 11
+10 AXIS南流山        10.6  1LDK       40.4            3     3                  6
+# ℹ 1,746 more rows
+# ℹ 1 more variable: tx_indicator &lt;dbl&gt;</code></pre>
+</div>
+</div>
+<section id="まず構造を確認する" class="level3" data-number="6.1">
+<h3 data-number="6.1" class="anchored" data-anchor-id="まず構造を確認する"><span class="header-section-number">6.1</span> まず構造を確認する</h3>
+<p>データを読み込んだ直後は、いきなり分析せず、行数・列数・列名・型・欠損を確認します。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(tx)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 1756    8</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(tx)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "title"              "monthly_rent"       "layout"            
+[4] "size_sqm"           "building_age"       "floor"             
+[7] "minutes_to_station" "tx_indicator"      </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(tx)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 1,756
+Columns: 8
+$ title              &lt;chr&gt; "(仮称)キャメル南流山9A", "(仮称)ヤマケンハウス", "ABLE早稲田J", "AJ新松戸"…
+$ monthly_rent       &lt;dbl&gt; 6.581818, 20.000000, 4.100000, 7.300000, 7.300000, …
+$ layout             &lt;chr&gt; "1K", "4LDK", "1K", "1LDK", "1LDK", "2LDK", "1LDK",…
+$ size_sqm           &lt;dbl&gt; 27.37, 130.00, 14.47, 31.93, 30.12, 55.62, 38.00, 4…
+$ building_age       &lt;dbl&gt; 1, 10, 38, 5, 4, 5, 6, 6, 10, 3, 8, 9, 13, 2, 33, 9…
+$ floor              &lt;dbl&gt; 3, 2, 2, 3, 3, 9, 5, 7, 2, 3, 4, 3, 2, 3, 3, 2, 2, …
+$ minutes_to_station &lt;dbl&gt; 13, 25, 6, 11, 9, 2, 3, 5, 11, 6, 1, 10, 8, 15, 14,…
+$ tx_indicator       &lt;dbl&gt; 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, …</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">colSums</span>(<span class="fu">is.na</span>(tx))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>             title       monthly_rent             layout           size_sqm 
+                 0                  0                  0                  0 
+      building_age              floor minutes_to_station       tx_indicator 
+                 0                  0                  0                  0 </code></pre>
+</div>
+</div>
+<p>このシートは、1行が1物件、列が物件名、家賃、間取り、広さ、築年数、階数、駅からの距離に相当する指標、<code>tx_indicator</code> などで構成されています。<strong>単位や指標の厳密な定義は、分析前にデータ作成者の定義表で確認してください。</strong> 値の大きさだけから単位を推測してはいけません。</p>
+</section>
+</section>
+<section id="オブジェクトと代入" class="level2" data-number="7">
+<h2 data-number="7" class="anchored" data-anchor-id="オブジェクトと代入"><span class="header-section-number">7</span> オブジェクトと代入</h2>
+<p>Rでは、値に名前を付けて保存します。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>number_of_properties <span class="ot">&lt;-</span> <span class="fu">nrow</span>(tx)</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>number_of_properties</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 1756</code></pre>
+</div>
+</div>
+<p>代入には <code>&lt;-</code> を使うのが一般的です。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>mean_rent <span class="ot">&lt;-</span> <span class="fu">mean</span>(tx<span class="sc">$</span>monthly_rent, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>mean_rent</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 8.442016</code></pre>
+</div>
+</div>
+<p>大文字と小文字は区別されます。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># mean_rent と Mean_Rent は別の名前</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>Mean_Rent</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-error">
+<pre><code>Error:
+! object 'Mean_Rent' not found</code></pre>
+</div>
+</div>
+</section>
+<section id="基本的な型" class="level2" data-number="8">
+<h2 data-number="8" class="anchored" data-anchor-id="基本的な型"><span class="header-section-number">8</span> 基本的な型</h2>
+<p>Rでよく使う型は次のとおりです。</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>型</th>
+<th>例</th>
+<th>主な用途</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>double / integer</td>
+<td><code>8.4</code>, <code>2021L</code></td>
+<td>数量、金額、年</td>
+</tr>
+<tr class="even">
+<td>character</td>
+<td><code>"1LDK"</code></td>
+<td>名称、コード、文章</td>
+</tr>
+<tr class="odd">
+<td>logical</td>
+<td><code>TRUE</code>, <code>FALSE</code></td>
+<td>条件判定</td>
+</tr>
+<tr class="even">
+<td>Date</td>
+<td><code>as.Date("2025-01-01")</code></td>
+<td>日付</td>
+</tr>
+<tr class="odd">
+<td>factor</td>
+<td>順序付きカテゴリ</td>
+<td>表示順やモデルの基準</td>
+</tr>
+</tbody>
+</table>
+<p>TXデータの型を個別に確認します。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">class</span>(tx<span class="sc">$</span>monthly_rent)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "numeric"</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">class</span>(tx<span class="sc">$</span>layout)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "character"</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">class</span>(tx<span class="sc">$</span>tx_indicator)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "numeric"</code></pre>
+</div>
+</div>
+<p><code>tx_indicator</code> が数値の0/1で保存されていても、分析上はカテゴリとして扱いたい場合があります。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>tx <span class="ot">&lt;-</span> tx <span class="sc">|&gt;</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">tx_group =</span> <span class="fu">factor</span>(</span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>      tx_indicator,</span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>      <span class="at">levels =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>),</span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>      <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"indicator = 0"</span>, <span class="st">"indicator = 1"</span>)</span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a><span class="fu">count</span>(tx, tx_group)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 2 × 2
+  tx_group          n
+  &lt;fct&gt;         &lt;int&gt;
+1 indicator = 0  1117
+2 indicator = 1   639</code></pre>
+</div>
+</div>
+</section>
+<section id="基本的な演算" class="level2" data-number="9">
+<h2 data-number="9" class="anchored" data-anchor-id="基本的な演算"><span class="header-section-number">9</span> 基本的な演算</h2>
+<section id="四則演算" class="level3" data-number="9.1">
+<h3 data-number="9.1" class="anchored" data-anchor-id="四則演算"><span class="header-section-number">9.1</span> 四則演算</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="dv">10</span> <span class="sc">+</span> <span class="dv">3</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 13</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="dv">10</span> <span class="sc">-</span> <span class="dv">3</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 7</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="dv">10</span> <span class="sc">*</span> <span class="dv">3</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 30</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="dv">10</span> <span class="sc">/</span> <span class="dv">3</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 3.333333</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="dv">10</span><span class="sc">^</span><span class="dv">2</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 100</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sqrt</span>(<span class="dv">100</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 10</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="fu">log</span>(<span class="dv">100</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 4.60517</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="fu">exp</span>(<span class="fu">log</span>(<span class="dv">100</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 100</code></pre>
+</div>
+</div>
+</section>
+<section id="列同士の演算" class="level3" data-number="9.2">
+<h3 data-number="9.2" class="anchored" data-anchor-id="列同士の演算"><span class="header-section-number">9.2</span> 列同士の演算</h3>
+<p>物件ごとの「家賃を広さで割った値」を作ります。ここでは単位が未確認なので、<code>rent_per_size</code> という中立的な名称を使います。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb50"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a>tx <span class="ot">&lt;-</span> tx <span class="sc">|&gt;</span></span>
+<span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">rent_per_size =</span> monthly_rent <span class="sc">/</span> size_sqm)</span>
+<span id="cb50-3"><a href="#cb50-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-4"><a href="#cb50-4" aria-hidden="true" tabindex="-1"></a><span class="fu">select</span>(tx, title, monthly_rent, size_sqm, rent_per_size) <span class="sc">|&gt;</span></span>
+<span id="cb50-5"><a href="#cb50-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_head</span>(<span class="at">n =</span> <span class="dv">5</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 5 × 4
+  title                  monthly_rent size_sqm rent_per_size
+  &lt;chr&gt;                         &lt;dbl&gt;    &lt;dbl&gt;         &lt;dbl&gt;
+1 (仮称)キャメル南流山9A         6.58     27.4         0.240
+2 (仮称)ヤマケンハウス          20       130           0.154
+3 ABLE早稲田J                    4.1      14.5         0.283
+4 AJ新松戸                       7.3      31.9         0.229
+5 AJ新松戸IX                     7.3      30.1         0.242</code></pre>
+</div>
+</div>
+<p>Rは各行について同じ計算を繰り返します。これをベクトル化と呼びます。</p>
+</section>
+</section>
+<section id="条件式" class="level2" data-number="10">
+<h2 data-number="10" class="anchored" data-anchor-id="条件式"><span class="header-section-number">10</span> 条件式</h2>
+<p>比較演算子は、データを抽出するときの基礎になります。</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>演算子</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>==</code></td>
+<td>等しい</td>
+</tr>
+<tr class="even">
+<td><code>!=</code></td>
+<td>等しくない</td>
+</tr>
+<tr class="odd">
+<td><code>&gt;</code>、<code>&gt;=</code></td>
+<td>より大きい、以上</td>
+</tr>
+<tr class="even">
+<td><code>&lt;</code>、<code>&lt;=</code></td>
+<td>より小さい、以下</td>
+</tr>
+<tr class="odd">
+<td><code>%in%</code></td>
+<td>候補のいずれかに含まれる</td>
+</tr>
+<tr class="even">
+<td><code>&amp;</code></td>
+<td>両方を満たす</td>
+</tr>
+<tr class="odd">
+<td><code>|</code></td>
+<td>どちらかを満たす</td>
+</tr>
+<tr class="even">
+<td><code>!</code></td>
+<td>否定</td>
+</tr>
+</tbody>
+</table>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a>(tx<span class="sc">$</span>monthly_rent <span class="sc">&gt;=</span> <span class="dv">10</span>) <span class="sc">|&gt;</span></span>
+<span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] FALSE  TRUE FALSE FALSE FALSE  TRUE</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(tx<span class="sc">$</span>size_sqm <span class="sc">&gt;=</span> <span class="dv">50</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 649</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(</span>
+<span id="cb56-2"><a href="#cb56-2" aria-hidden="true" tabindex="-1"></a>  tx<span class="sc">$</span>layout <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"1LDK"</span>, <span class="st">"2LDK"</span>) <span class="sc">&amp;</span> tx<span class="sc">$</span>minutes_to_station <span class="sc">&lt;=</span> <span class="dv">10</span>,</span>
+<span id="cb56-3"><a href="#cb56-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">na.rm =</span> <span class="cn">TRUE</span></span>
+<span id="cb56-4"><a href="#cb56-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 326</code></pre>
+</div>
+</div>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span><code>=</code>と<code>==</code>を区別する
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li><code>x &lt;- 3</code> または関数内の <code>na.rm = TRUE</code> は設定・代入。</li>
+<li><code>x == 3</code> は「等しいか」という比較。</li>
+</ul>
+</div>
+</div>
+</section>
+<section id="ベクトルとデータフレーム" class="level2" data-number="11">
+<h2 data-number="11" class="anchored" data-anchor-id="ベクトルとデータフレーム"><span class="header-section-number">11</span> ベクトルとデータフレーム</h2>
+<p>一つの列はベクトルとして取り出せます。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb58"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a>rent_vector <span class="ot">&lt;-</span> tx<span class="sc">$</span>monthly_rent</span>
+<span id="cb58-2"><a href="#cb58-2" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(rent_vector)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 1756</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb60"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(rent_vector)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1]  6.581818 20.000000  4.100000  7.300000  7.300000 16.300000</code></pre>
+</div>
+</div>
+<p>行と列を番号で指定することもできますが、列名を使う方が読みやすく安全です。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb62"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a>tx[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 3 × 4
+  title                  monthly_rent layout size_sqm
+  &lt;chr&gt;                         &lt;dbl&gt; &lt;chr&gt;     &lt;dbl&gt;
+1 (仮称)キャメル南流山9A         6.58 1K         27.4
+2 (仮称)ヤマケンハウス          20    4LDK      130  
+3 ABLE早稲田J                    4.1  1K         14.5</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb64"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb64-1"><a href="#cb64-1" aria-hidden="true" tabindex="-1"></a><span class="fu">select</span>(tx, title, monthly_rent, layout, size_sqm) <span class="sc">|&gt;</span></span>
+<span id="cb64-2"><a href="#cb64-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_head</span>(<span class="at">n =</span> <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 3 × 4
+  title                  monthly_rent layout size_sqm
+  &lt;chr&gt;                         &lt;dbl&gt; &lt;chr&gt;     &lt;dbl&gt;
+1 (仮称)キャメル南流山9A         6.58 1K         27.4
+2 (仮称)ヤマケンハウス          20    4LDK      130  
+3 ABLE早稲田J                    4.1  1K         14.5</code></pre>
+</div>
+</div>
+</section>
+<section id="欠損値-na" class="level2" data-number="12">
+<h2 data-number="12" class="anchored" data-anchor-id="欠損値-na"><span class="header-section-number">12</span> 欠損値 <code>NA</code></h2>
+<p>欠損値は「0」ではなく、「観測されていない、利用できない、該当しない」などを表します。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb66"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb66-1"><a href="#cb66-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(<span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">7</span>, <span class="cn">NA</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] NA</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb68"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb68-1"><a href="#cb68-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(<span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">7</span>, <span class="cn">NA</span>), <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 6</code></pre>
+</div>
+</div>
+<p><code>na.rm = TRUE</code> は欠損を除いて計算する指定ですが、常に正しいとは限りません。欠損が特定の地域、企業、期間に偏っていれば、除外後の平均は母集団を代表しなくなります。</p>
+<p>TXシートでは欠損数を次のように確認できます。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb70"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb70-1"><a href="#cb70-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tibble</span>(</span>
+<span id="cb70-2"><a href="#cb70-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">variable =</span> <span class="fu">names</span>(tx),</span>
+<span id="cb70-3"><a href="#cb70-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">missing_n =</span> <span class="fu">colSums</span>(<span class="fu">is.na</span>(tx)),</span>
+<span id="cb70-4"><a href="#cb70-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">missing_rate =</span> <span class="fu">colMeans</span>(<span class="fu">is.na</span>(tx))</span>
+<span id="cb70-5"><a href="#cb70-5" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 10 × 3
+   variable           missing_n missing_rate
+   &lt;chr&gt;                  &lt;dbl&gt;        &lt;dbl&gt;
+ 1 title                      0            0
+ 2 monthly_rent               0            0
+ 3 layout                     0            0
+ 4 size_sqm                   0            0
+ 5 building_age               0            0
+ 6 floor                      0            0
+ 7 minutes_to_station         0            0
+ 8 tx_indicator               0            0
+ 9 tx_group                   0            0
+10 rent_per_size              0            0</code></pre>
+</div>
+</div>
+</section>
+<section id="関数を作る" class="level2" data-number="13">
+<h2 data-number="13" class="anchored" data-anchor-id="関数を作る"><span class="header-section-number">13</span> 関数を作る</h2>
+<p>同じ処理を繰り返すときは、関数にします。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb72"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb72-1"><a href="#cb72-1" aria-hidden="true" tabindex="-1"></a>safe_mean <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
+<span id="cb72-2"><a href="#cb72-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">all</span>(<span class="fu">is.na</span>(x))) <span class="fu">return</span>(<span class="cn">NA_real_</span>)</span>
+<span id="cb72-3"><a href="#cb72-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mean</span>(x, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb72-4"><a href="#cb72-4" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb72-5"><a href="#cb72-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb72-6"><a href="#cb72-6" aria-hidden="true" tabindex="-1"></a><span class="fu">safe_mean</span>(tx<span class="sc">$</span>monthly_rent)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 8.442016</code></pre>
+</div>
+</div>
+<p>関数名は、処理の目的が分かる名前にします。</p>
+</section>
+<section id="エラーとヘルプ" class="level2" data-number="14">
+<h2 data-number="14" class="anchored" data-anchor-id="エラーとヘルプ"><span class="header-section-number">14</span> エラーとヘルプ</h2>
+<p>関数の使い方を確認するには、次を使います。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb74"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb74-1"><a href="#cb74-1" aria-hidden="true" tabindex="-1"></a>?mean</span>
+<span id="cb74-2"><a href="#cb74-2" aria-hidden="true" tabindex="-1"></a><span class="fu">help</span>(<span class="st">"mean"</span>)</span>
+<span id="cb74-3"><a href="#cb74-3" aria-hidden="true" tabindex="-1"></a><span class="fu">example</span>(mean)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>エラーが出たら、まず次を確認します。</p>
+<ol type="1">
+<li>ファイルパスが正しいか。</li>
+<li>列名の大文字・小文字や全角・半角が一致しているか。</li>
+<li>パッケージを読み込んだか。</li>
+<li>括弧、引用符、カンマが閉じているか。</li>
+<li>オブジェクトを作るコードを先に実行したか。</li>
+</ol>
+</section>
+<section id="aiが作ったコードを点検する5問" class="level2" data-number="15">
+<h2 data-number="15" class="anchored" data-anchor-id="aiが作ったコードを点検する5問"><span class="header-section-number">15</span> AIが作ったコードを点検する5問</h2>
+<ol type="1">
+<li>入力ファイルとシート名は実在するか。</li>
+<li>使用している列名はデータに存在するか。</li>
+<li>欠損値をどう扱っているか。</li>
+<li>行数は処理前後で想定どおりか。</li>
+<li>出力値を元データの数行から手計算で確かめられるか。</li>
+</ol>
+</section>
+<section id="演習" class="level2" data-number="16">
+<h2 data-number="16" class="anchored" data-anchor-id="演習"><span class="header-section-number">16</span> 演習</h2>
+<section id="問1" class="level3" data-number="16.1">
+<h3 data-number="16.1" class="anchored" data-anchor-id="問1"><span class="header-section-number">16.1</span> 問1</h3>
+<p><code>tx_data</code>シートを読み込み、行数、列数、列名を確認してください。</p>
+</section>
+<section id="問2" class="level3" data-number="16.2">
+<h3 data-number="16.2" class="anchored" data-anchor-id="問2"><span class="header-section-number">16.2</span> 問2</h3>
+<p><code>monthly_rent</code>、<code>size_sqm</code>、<code>minutes_to_station</code> の平均・中央値・最小値・最大値を求めてください。欠損数も併記してください。</p>
+</section>
+<section id="問3" class="level3" data-number="16.3">
+<h3 data-number="16.3" class="anchored" data-anchor-id="問3"><span class="header-section-number">16.3</span> 問3</h3>
+<p>次の条件を満たす物件数を求めてください。</p>
+<ul>
+<li><code>size_sqm</code> が50以上</li>
+<li><code>minutes_to_station</code> が10以下</li>
+<li><code>layout</code> が <code>1LDK</code> または <code>2LDK</code></li>
+</ul>
+</section>
+<section id="問4" class="level3" data-number="16.4">
+<h3 data-number="16.4" class="anchored" data-anchor-id="問4"><span class="header-section-number">16.4</span> 問4</h3>
+<p><code>rent_per_size = m_rent / Size</code> を作り、最大値を持つ物件を確認してください。値の解釈に必要な追加情報も書いてください。</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-4-contents" aria-controls="callout-4" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>解答例
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-4" class="callout-4-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb75"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb75-1"><a href="#cb75-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 問1</span></span>
+<span id="cb75-2"><a href="#cb75-2" aria-hidden="true" tabindex="-1"></a>tx_ex <span class="ot">&lt;-</span> <span class="fu">read_excel</span>(analysis_path, <span class="at">sheet =</span> <span class="st">"tx_data"</span>)</span>
+<span id="cb75-3"><a href="#cb75-3" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(tx_ex)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 1756    8</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb77"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb77-1"><a href="#cb77-1" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(tx_ex)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "title"              "monthly_rent"       "layout"            
+[4] "size_sqm"           "building_age"       "floor"             
+[7] "minutes_to_station" "tx_indicator"      </code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb79"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb79-1"><a href="#cb79-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 問2</span></span>
+<span id="cb79-2"><a href="#cb79-2" aria-hidden="true" tabindex="-1"></a>tx_ex <span class="sc">|&gt;</span></span>
+<span id="cb79-3"><a href="#cb79-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb79-4"><a href="#cb79-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">across</span>(</span>
+<span id="cb79-5"><a href="#cb79-5" aria-hidden="true" tabindex="-1"></a>      <span class="fu">c</span>(monthly_rent, size_sqm, minutes_to_station),</span>
+<span id="cb79-6"><a href="#cb79-6" aria-hidden="true" tabindex="-1"></a>      <span class="fu">list</span>(</span>
+<span id="cb79-7"><a href="#cb79-7" aria-hidden="true" tabindex="-1"></a>        <span class="at">mean =</span> <span class="sc">~</span> <span class="fu">mean</span>(.x, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb79-8"><a href="#cb79-8" aria-hidden="true" tabindex="-1"></a>        <span class="at">median =</span> <span class="sc">~</span> <span class="fu">median</span>(.x, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb79-9"><a href="#cb79-9" aria-hidden="true" tabindex="-1"></a>        <span class="at">min =</span> <span class="sc">~</span> <span class="fu">min</span>(.x, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb79-10"><a href="#cb79-10" aria-hidden="true" tabindex="-1"></a>        <span class="at">max =</span> <span class="sc">~</span> <span class="fu">max</span>(.x, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb79-11"><a href="#cb79-11" aria-hidden="true" tabindex="-1"></a>        <span class="at">missing =</span> <span class="sc">~</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(.x))</span>
+<span id="cb79-12"><a href="#cb79-12" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb79-13"><a href="#cb79-13" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb79-14"><a href="#cb79-14" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 15
+  monthly_rent_mean monthly_rent_median monthly_rent_min monthly_rent_max
+              &lt;dbl&gt;               &lt;dbl&gt;            &lt;dbl&gt;            &lt;dbl&gt;
+1              8.44                 7.1              2.3               35
+# ℹ 11 more variables: monthly_rent_missing &lt;int&gt;, size_sqm_mean &lt;dbl&gt;,
+#   size_sqm_median &lt;dbl&gt;, size_sqm_min &lt;dbl&gt;, size_sqm_max &lt;dbl&gt;,
+#   size_sqm_missing &lt;int&gt;, minutes_to_station_mean &lt;dbl&gt;,
+#   minutes_to_station_median &lt;dbl&gt;, minutes_to_station_min &lt;dbl&gt;,
+#   minutes_to_station_max &lt;dbl&gt;, minutes_to_station_missing &lt;int&gt;</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb81"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb81-1"><a href="#cb81-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 問3</span></span>
+<span id="cb81-2"><a href="#cb81-2" aria-hidden="true" tabindex="-1"></a>tx_ex <span class="sc">|&gt;</span></span>
+<span id="cb81-3"><a href="#cb81-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(</span>
+<span id="cb81-4"><a href="#cb81-4" aria-hidden="true" tabindex="-1"></a>    size_sqm <span class="sc">&gt;=</span> <span class="dv">50</span>,</span>
+<span id="cb81-5"><a href="#cb81-5" aria-hidden="true" tabindex="-1"></a>    minutes_to_station <span class="sc">&lt;=</span> <span class="dv">10</span>,</span>
+<span id="cb81-6"><a href="#cb81-6" aria-hidden="true" tabindex="-1"></a>    layout <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"1LDK"</span>, <span class="st">"2LDK"</span>)</span>
+<span id="cb81-7"><a href="#cb81-7" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb81-8"><a href="#cb81-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">n =</span> <span class="fu">n</span>())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 1
+      n
+  &lt;int&gt;
+1   157</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb83"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb83-1"><a href="#cb83-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 問4</span></span>
+<span id="cb83-2"><a href="#cb83-2" aria-hidden="true" tabindex="-1"></a>tx_ex <span class="sc">|&gt;</span></span>
+<span id="cb83-3"><a href="#cb83-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">rent_per_size =</span> monthly_rent <span class="sc">/</span> size_sqm) <span class="sc">|&gt;</span></span>
+<span id="cb83-4"><a href="#cb83-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_max</span>(rent_per_size, <span class="at">n =</span> <span class="dv">1</span>, <span class="at">with_ties =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb83-5"><a href="#cb83-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(title, monthly_rent, size_sqm, rent_per_size)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 4
+  title                                      monthly_rent size_sqm rent_per_size
+  &lt;chr&gt;                                             &lt;dbl&gt;    &lt;dbl&gt;         &lt;dbl&gt;
+1 パークシティ柏の葉キャンパス　ザ・ゲートタワー　ウエスト……         20.5     27.0         0.760</code></pre>
+</div>
+</div>
+<p>解釈には、<code>monthly_rent</code> と <code>size_sqm</code> の単位、共益費等を含むか、観測時点、同一物件の重複有無などが必要です。</p>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="章末チェック" class="level2" data-number="17">
+<h2 data-number="17" class="anchored" data-anchor-id="章末チェック"><span class="header-section-number">17</span> 章末チェック</h2>
+<ul class="task-list">
+<li><label><input type="checkbox">プロジェクトを開いて相対パスを使っている。</label></li>
+<li><label><input type="checkbox"><code>data_raw</code> の原データを上書きしていない。</label></li>
+<li><label><input type="checkbox">読み込み直後に <code>dim()</code>、<code>names()</code>、<code>glimpse()</code>、欠損数を確認した。</label></li>
+<li><label><input type="checkbox">数値型とカテゴリ型の違いを説明できる。</label></li>
+<li><label><input type="checkbox"><code>NA</code> を0と区別できる。</label></li>
+<li><label><input type="checkbox">AI生成コードを列名、欠損、行数、定義から検証できる。</label></li>
+</ul>
+</section>
+<section id="参考資料" class="level2" data-number="18">
+<h2 data-number="18" class="anchored" data-anchor-id="参考資料"><span class="header-section-number">18</span> 参考資料</h2>
+<ul>
+<li>R for Data Science (2e): https://r4ds.hadley.nz/</li>
+<li>Quarto Guide: https://quarto.org/docs/guide/</li>
+<li>readxl: https://readxl.tidyverse.org/</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

@@ -1,0 +1,1940 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>第8章 Shinyで地図ダッシュボードを作る – Rデータ操作入門（2026年度版）</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-6ef75a0fa32a0ab5c67dbc0e0e72a034.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+
+</head>
+
+<body class="nav-sidebar docked quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./chapter8_2026.html">第8章 Shinyで地図ダッシュボードを作る</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Rデータ操作入門（2026年度版）</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Rデータ操作入門（2026年度版）</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./chapter1_2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">第1章 Rと再現可能なデータ分析の基礎</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./chapter2_2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">第2章 データを自力で取得する</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./chapter3_2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">第3章 データを整える・集計する・結合する</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./chapter4_2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">第4章 文字列・日付・複数ファイルを扱う</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./chapter5_2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">第5章 ggplot2による実データ可視化</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./chapter6_2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">第6章 総合演習</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./chapter7_2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">第7章 地理データをRで操作する</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./chapter8_2026.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">第8章 Shinyで地図ダッシュボードを作る</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#この章のゴール" id="toc-この章のゴール" class="nav-link active" data-scroll-target="#この章のゴール"><span class="header-section-number">1</span> この章のゴール</a>
+  <ul class="collapse">
+  <li><a href="#到達目標" id="toc-到達目標" class="nav-link" data-scroll-target="#到達目標"><span class="header-section-number">1.1</span> 到達目標</a></li>
+  </ul></li>
+  <li><a href="#準備" id="toc-準備" class="nav-link" data-scroll-target="#準備"><span class="header-section-number">2</span> 準備</a>
+  <ul class="collapse">
+  <li><a href="#必要ファイル" id="toc-必要ファイル" class="nav-link" data-scroll-target="#必要ファイル"><span class="header-section-number">2.1</span> 必要ファイル</a></li>
+  <li><a href="#アプリのフォルダ" id="toc-アプリのフォルダ" class="nav-link" data-scroll-target="#アプリのフォルダ"><span class="header-section-number">2.2</span> アプリのフォルダ</a></li>
+  </ul></li>
+  <li><a href="#shinyの基本構造" id="toc-shinyの基本構造" class="nav-link" data-scroll-target="#shinyの基本構造"><span class="header-section-number">3</span> Shinyの基本構造</a>
+  <ul class="collapse">
+  <li><a href="#リアクティブグラフとして考える" id="toc-リアクティブグラフとして考える" class="nav-link" data-scroll-target="#リアクティブグラフとして考える"><span class="header-section-number">3.1</span> リアクティブグラフとして考える</a></li>
+  </ul></li>
+  <li><a href="#データをどこで読むか" id="toc-データをどこで読むか" class="nav-link" data-scroll-target="#データをどこで読むか"><span class="header-section-number">4</span> データをどこで読むか</a>
+  <ul class="collapse">
+  <li><a href="#不変データはserverの外で一度だけ読む" id="toc-不変データはserverの外で一度だけ読む" class="nav-link" data-scroll-target="#不変データはserverの外で一度だけ読む"><span class="header-section-number">4.1</span> 不変データは<code>server</code>の外で一度だけ読む</a></li>
+  <li><a href="#rdsの中身を監査する" id="toc-rdsの中身を監査する" class="nav-link" data-scroll-target="#rdsの中身を監査する"><span class="header-section-number">4.2</span> RDSの中身を監査する</a></li>
+  </ul></li>
+  <li><a href="#uiを情報階層から設計する" id="toc-uiを情報階層から設計する" class="nav-link" data-scroll-target="#uiを情報階層から設計する"><span class="header-section-number">5</span> UIを情報階層から設計する</a>
+  <ul class="collapse">
+  <li><a href="#先に誰が何を知りたいかを決める" id="toc-先に誰が何を知りたいかを決める" class="nav-link" data-scroll-target="#先に誰が何を知りたいかを決める"><span class="header-section-number">5.1</span> 先に「誰が何を知りたいか」を決める</a></li>
+  <li><a href="#bslibでダッシュボード骨格を作る" id="toc-bslibでダッシュボード骨格を作る" class="nav-link" data-scroll-target="#bslibでダッシュボード骨格を作る"><span class="header-section-number">5.2</span> <code>bslib</code>でダッシュボード骨格を作る</a></li>
+  <li><a href="#value-boxを置く" id="toc-value-boxを置く" class="nav-link" data-scroll-target="#value-boxを置く"><span class="header-section-number">5.3</span> value boxを置く</a></li>
+  </ul></li>
+  <li><a href="#入力候補をデータから作る" id="toc-入力候補をデータから作る" class="nav-link" data-scroll-target="#入力候補をデータから作る"><span class="header-section-number">6</span> 入力候補をデータから作る</a></li>
+  <li><a href="#共通のリアクティブデータを作る" id="toc-共通のリアクティブデータを作る" class="nav-link" data-scroll-target="#共通のリアクティブデータを作る"><span class="header-section-number">7</span> 共通のリアクティブデータを作る</a>
+  <ul class="collapse">
+  <li><a href="#選択中の指標定義" id="toc-選択中の指標定義" class="nav-link" data-scroll-target="#選択中の指標定義"><span class="header-section-number">7.1</span> 選択中の指標定義</a></li>
+  <li><a href="#地図用データ" id="toc-地図用データ" class="nav-link" data-scroll-target="#地図用データ"><span class="header-section-number">7.2</span> 地図用データ</a></li>
+  <li><a href="#ランキングと選択行" id="toc-ランキングと選択行" class="nav-link" data-scroll-target="#ランキングと選択行"><span class="header-section-number">7.3</span> ランキングと選択行</a></li>
+  <li><a href="#駅のフィルター" id="toc-駅のフィルター" class="nav-link" data-scroll-target="#駅のフィルター"><span class="header-section-number">7.4</span> 駅のフィルター</a></li>
+  </ul></li>
+  <li><a href="#leaflet地図を効率的に更新する" id="toc-leaflet地図を効率的に更新する" class="nav-link" data-scroll-target="#leaflet地図を効率的に更新する"><span class="header-section-number">8</span> Leaflet地図を効率的に更新する</a>
+  <ul class="collapse">
+  <li><a href="#地図本体は一度だけ作る" id="toc-地図本体は一度だけ作る" class="nav-link" data-scroll-target="#地図本体は一度だけ作る"><span class="header-section-number">8.1</span> 地図本体は一度だけ作る</a></li>
+  <li><a href="#leafletproxyでレイヤーだけ更新する" id="toc-leafletproxyでレイヤーだけ更新する" class="nav-link" data-scroll-target="#leafletproxyでレイヤーだけ更新する"><span class="header-section-number">8.2</span> <code>leafletProxy()</code>でレイヤーだけ更新する</a></li>
+  <li><a href="#駅レイヤーを独立して更新する" id="toc-駅レイヤーを独立して更新する" class="nav-link" data-scroll-target="#駅レイヤーを独立して更新する"><span class="header-section-number">8.3</span> 駅レイヤーを独立して更新する</a></li>
+  </ul></li>
+  <li><a href="#地図クリックと入力欄を同期する" id="toc-地図クリックと入力欄を同期する" class="nav-link" data-scroll-target="#地図クリックと入力欄を同期する"><span class="header-section-number">9</span> 地図クリックと入力欄を同期する</a></li>
+  <li><a href="#kpiを作る" id="toc-kpiを作る" class="nav-link" data-scroll-target="#kpiを作る"><span class="header-section-number">10</span> KPIを作る</a>
+  <ul class="collapse">
+  <li><a href="#選択値と順位" id="toc-選択値と順位" class="nav-link" data-scroll-target="#選択値と順位"><span class="header-section-number">10.1</span> 選択値と順位</a></li>
+  <li><a href="#前年比" id="toc-前年比" class="nav-link" data-scroll-target="#前年比"><span class="header-section-number">10.2</span> 前年比</a></li>
+  <li><a href="#条件を満たす駅数" id="toc-条件を満たす駅数" class="nav-link" data-scroll-target="#条件を満たす駅数"><span class="header-section-number">10.3</span> 条件を満たす駅数</a></li>
+  </ul></li>
+  <li><a href="#時系列ランキング表を連動させる" id="toc-時系列ランキング表を連動させる" class="nav-link" data-scroll-target="#時系列ランキング表を連動させる"><span class="header-section-number">11</span> 時系列・ランキング・表を連動させる</a>
+  <ul class="collapse">
+  <li><a href="#選択都県の時系列" id="toc-選択都県の時系列" class="nav-link" data-scroll-target="#選択都県の時系列"><span class="header-section-number">11.1</span> 選択都県の時系列</a></li>
+  <li><a href="#ランキンググラフ" id="toc-ランキンググラフ" class="nav-link" data-scroll-target="#ランキンググラフ"><span class="header-section-number">11.2</span> ランキンググラフ</a></li>
+  <li><a href="#dtによる表" id="toc-dtによる表" class="nav-link" data-scroll-target="#dtによる表"><span class="header-section-number">11.3</span> <code>DT</code>による表</a></li>
+  </ul></li>
+  <li><a href="#第2章第6章の背景属性を表示する" id="toc-第2章第6章の背景属性を表示する" class="nav-link" data-scroll-target="#第2章第6章の背景属性を表示する"><span class="header-section-number">12</span> 第2章・第6章の背景属性を表示する</a></li>
+  <li><a href="#完成アプリのコードを読む" id="toc-完成アプリのコードを読む" class="nav-link" data-scroll-target="#完成アプリのコードを読む"><span class="header-section-number">13</span> 完成アプリのコードを読む</a></li>
+  <li><a href="#デバッグ方法" id="toc-デバッグ方法" class="nav-link" data-scroll-target="#デバッグ方法"><span class="header-section-number">14</span> デバッグ方法</a>
+  <ul class="collapse">
+  <li><a href="#idの対応を確認する" id="toc-idの対応を確認する" class="nav-link" data-scroll-target="#idの対応を確認する"><span class="header-section-number">14.1</span> IDの対応を確認する</a></li>
+  <li><a href="#reqとvalidateを使う" id="toc-reqとvalidateを使う" class="nav-link" data-scroll-target="#reqとvalidateを使う"><span class="header-section-number">14.2</span> <code>req()</code>と<code>validate()</code>を使う</a></li>
+  <li><a href="#中間データをコンソールへ出す" id="toc-中間データをコンソールへ出す" class="nav-link" data-scroll-target="#中間データをコンソールへ出す"><span class="header-section-number">14.3</span> 中間データをコンソールへ出す</a></li>
+  <li><a href="#リアクティブログを使う" id="toc-リアクティブログを使う" class="nav-link" data-scroll-target="#リアクティブログを使う"><span class="header-section-number">14.4</span> リアクティブログを使う</a></li>
+  </ul></li>
+  <li><a href="#性能と再現性" id="toc-性能と再現性" class="nav-link" data-scroll-target="#性能と再現性"><span class="header-section-number">15</span> 性能と再現性</a>
+  <ul class="collapse">
+  <li><a href="#本教材で行った軽量化" id="toc-本教材で行った軽量化" class="nav-link" data-scroll-target="#本教材で行った軽量化"><span class="header-section-number">15.1</span> 本教材で行った軽量化</a></li>
+  <li><a href="#反応が遅いときの診断順" id="toc-反応が遅いときの診断順" class="nav-link" data-scroll-target="#反応が遅いときの診断順"><span class="header-section-number">15.2</span> 反応が遅いときの診断順</a></li>
+  <li><a href="#データ更新の流れ" id="toc-データ更新の流れ" class="nav-link" data-scroll-target="#データ更新の流れ"><span class="header-section-number">15.3</span> データ更新の流れ</a></li>
+  </ul></li>
+  <li><a href="#授業内演習" id="toc-授業内演習" class="nav-link" data-scroll-target="#授業内演習"><span class="header-section-number">16</span> 授業内演習</a>
+  <ul class="collapse">
+  <li><a href="#exercise-8-1-スターターへ塗り分けを追加する" id="toc-exercise-8-1-スターターへ塗り分けを追加する" class="nav-link" data-scroll-target="#exercise-8-1-スターターへ塗り分けを追加する"><span class="header-section-number">16.1</span> Exercise 8-1 スターターへ塗り分けを追加する</a></li>
+  <li><a href="#exercise-8-2-kpiを3つ作る" id="toc-exercise-8-2-kpiを3つ作る" class="nav-link" data-scroll-target="#exercise-8-2-kpiを3つ作る"><span class="header-section-number">16.2</span> Exercise 8-2 KPIを3つ作る</a></li>
+  <li><a href="#exercise-8-3-駅レイヤーを追加する" id="toc-exercise-8-3-駅レイヤーを追加する" class="nav-link" data-scroll-target="#exercise-8-3-駅レイヤーを追加する"><span class="header-section-number">16.3</span> Exercise 8-3 駅レイヤーを追加する</a></li>
+  <li><a href="#exercise-8-4-地図クリックを同期する" id="toc-exercise-8-4-地図クリックを同期する" class="nav-link" data-scroll-target="#exercise-8-4-地図クリックを同期する"><span class="header-section-number">16.4</span> Exercise 8-4 地図クリックを同期する</a></li>
+  <li><a href="#exercise-8-5-基準年の違いをuiへ組み込む" id="toc-exercise-8-5-基準年の違いをuiへ組み込む" class="nav-link" data-scroll-target="#exercise-8-5-基準年の違いをuiへ組み込む"><span class="header-section-number">16.5</span> Exercise 8-5 基準年の違いをUIへ組み込む</a></li>
+  </ul></li>
+  <li><a href="#発展演習" id="toc-発展演習" class="nav-link" data-scroll-target="#発展演習"><span class="header-section-number">17</span> 発展演習</a>
+  <ul class="collapse">
+  <li><a href="#ダウンロード機能" id="toc-ダウンロード機能" class="nav-link" data-scroll-target="#ダウンロード機能"><span class="header-section-number">17.1</span> ダウンロード機能</a></li>
+  <li><a href="#urlまたはブックマークで状態を共有する" id="toc-urlまたはブックマークで状態を共有する" class="nav-link" data-scroll-target="#urlまたはブックマークで状態を共有する"><span class="header-section-number">17.2</span> URLまたはブックマークで状態を共有する</a></li>
+  <li><a href="#モジュールへ分割する" id="toc-モジュールへ分割する" class="nav-link" data-scroll-target="#モジュールへ分割する"><span class="header-section-number">17.3</span> モジュールへ分割する</a></li>
+  <li><a href="#別データを追加する" id="toc-別データを追加する" class="nav-link" data-scroll-target="#別データを追加する"><span class="header-section-number">17.4</span> 別データを追加する</a></li>
+  <li><a href="#世界版weoダッシュボード" id="toc-世界版weoダッシュボード" class="nav-link" data-scroll-target="#世界版weoダッシュボード"><span class="header-section-number">17.5</span> 世界版WEOダッシュボード</a></li>
+  </ul></li>
+  <li><a href="#aiを使ったshiny開発のルール" id="toc-aiを使ったshiny開発のルール" class="nav-link" data-scroll-target="#aiを使ったshiny開発のルール"><span class="header-section-number">18</span> AIを使ったShiny開発のルール</a></li>
+  <li><a href="#最終課題" id="toc-最終課題" class="nav-link" data-scroll-target="#最終課題"><span class="header-section-number">19</span> 最終課題</a>
+  <ul class="collapse">
+  <li><a href="#提出物" id="toc-提出物" class="nav-link" data-scroll-target="#提出物"><span class="header-section-number">19.1</span> 提出物</a></li>
+  <li><a href="#評価基準" id="toc-評価基準" class="nav-link" data-scroll-target="#評価基準"><span class="header-section-number">19.2</span> 評価基準</a></li>
+  </ul></li>
+  <li><a href="#完成例の起動と比較" id="toc-完成例の起動と比較" class="nav-link" data-scroll-target="#完成例の起動と比較"><span class="header-section-number">20</span> 完成例の起動と比較</a></li>
+  <li><a href="#章末チェック" id="toc-章末チェック" class="nav-link" data-scroll-target="#章末チェック"><span class="header-section-number">21</span> 章末チェック</a></li>
+  <li><a href="#参考資料" id="toc-参考資料" class="nav-link" data-scroll-target="#参考資料"><span class="header-section-number">22</span> 参考資料</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">第8章 Shinyで地図ダッシュボードを作る</h1>
+<p class="subtitle lead">第2章・第6章・第7章のデータを一つの対話型アプリへ統合する</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="この章のゴール" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> この章のゴール</h1>
+<p>第7章で作成した空間データと、第6章までに扱った県民経済計算・人口・農林業データを組み合わせ、<strong>関東の地域経済・鉄道ダッシュボード</strong>を作ります。</p>
+<p>完成アプリでは、次の操作が連動します。</p>
+<ul>
+<li>年を選ぶと、都県別のGDP・雇用者報酬・比率が更新される。</li>
+<li>指標を選ぶと、塗り分け地図、順位、KPIが更新される。</li>
+<li>都県を選ぶと、時系列、農林業シェア、人口、一人当たりGDPが更新される。</li>
+<li>駅の乗降客数しきい値を変えると、地図上の駅と駅数KPIが更新される。</li>
+<li>地図上の都県をクリックすると、選択欄も更新される。</li>
+</ul>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>flowchart LR</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  A[入力&lt;br/&gt;年・指標・都県・駅しきい値] --&gt; B[reactive data]</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  B --&gt; C[Leaflet地図]</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  B --&gt; D[KPI]</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  B --&gt; E[時系列グラフ]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  B --&gt; F[ランキング]</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  C --&gt;|地図クリック| A</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<section id="到達目標" class="level2" data-number="1.1">
+<h2 data-number="1.1" class="anchored" data-anchor-id="到達目標"><span class="header-section-number">1.1</span> 到達目標</h2>
+<ol type="1">
+<li>Shinyの<code>ui</code>、<code>server</code>、リアクティブグラフを説明する。</li>
+<li>重いデータ処理と画面更新処理を分離する。</li>
+<li><code>reactive()</code>で再利用可能な中間データを作る。</li>
+<li><code>renderLeaflet()</code>と<code>leafletProxy()</code>を使い分ける。</li>
+<li>入力、地図クリック、KPI、グラフ、表を同期する。</li>
+<li>データの基準年・定義・欠損をUI上でも明示する。</li>
+<li>AIが生成したShinyコードを、依存関係と検算の観点からレビューする。</li>
+</ol>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>この章の評価対象
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>「画面が動く」だけでは不十分です。データ読込の位置、リアクティブ依存関係、欠損時の動作、基準年の表示、出所、再現性まで含めてアプリを評価します。</p>
+</div>
+</div>
+</section>
+</section>
+<section id="準備" class="level1" data-number="2">
+<h1 data-number="2"><span class="header-section-number">2</span> 準備</h1>
+<section id="必要ファイル" class="level2" data-number="2.1">
+<h2 data-number="2.1" class="anchored" data-anchor-id="必要ファイル"><span class="header-section-number">2.1</span> 必要ファイル</h2>
+<p>第7章を完了し、次のファイルがあることを確認します。</p>
+<pre class="text"><code>data_clean/kanto_dashboard_data.rds</code></pre>
+<p>R Consoleで確認します。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>bundle_path <span class="ot">&lt;-</span> <span class="fu">file.path</span>(<span class="st">"data_clean"</span>, <span class="st">"kanto_dashboard_data.rds"</span>)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">file.exists</span>(bundle_path)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><code>FALSE</code>の場合は、第7章の最後で次を実行します。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="fu">file.path</span>(<span class="st">"R"</span>, <span class="st">"build_kanto_dashboard_data.R"</span>))</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">build_kanto_dashboard_data</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>第2章のAPI演習で<code>data_clean/pref_population_2020.csv</code>を作ってから再構築すると、人口と一人当たりGDPもアプリに表示されます。人口ファイルがなくてもアプリ本体は動きます。</p>
+</section>
+<section id="アプリのフォルダ" class="level2" data-number="2.2">
+<h2 data-number="2.2" class="anchored" data-anchor-id="アプリのフォルダ"><span class="header-section-number">2.2</span> アプリのフォルダ</h2>
+<p>この教材には2つのアプリを同梱しています。</p>
+<pre class="text"><code>apps/
+  kanto_dashboard_starter/
+    app.R
+  kanto_dashboard/
+    app.R</code></pre>
+<ul>
+<li><code>kanto_dashboard_starter</code>：授業中に機能を追加する開始版</li>
+<li><code>kanto_dashboard</code>：完成例</li>
+</ul>
+<p>スターターを起動します。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>shiny<span class="sc">::</span><span class="fu">runApp</span>(<span class="fu">file.path</span>(<span class="st">"apps"</span>, <span class="st">"kanto_dashboard_starter"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>完成例は次で起動します。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>shiny<span class="sc">::</span><span class="fu">runApp</span>(<span class="fu">file.path</span>(<span class="st">"apps"</span>, <span class="st">"kanto_dashboard"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Positronでの起動
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><code>apps/kanto_dashboard_starter/app.R</code>を開き、Run Appを実行しても構いません。アプリの作業ディレクトリがアプリフォルダになるため、本教材ではプロジェクト直下を<code>../..</code>から求めています。</p>
+</div>
+</div>
+</section>
+</section>
+<section id="shinyの基本構造" class="level1" data-number="3">
+<h1 data-number="3"><span class="header-section-number">3</span> Shinyの基本構造</h1>
+<p>最小のShinyアプリは、<code>ui</code>、<code>server</code>、<code>shinyApp()</code>から成ります。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(shiny)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>ui <span class="ot">&lt;-</span> <span class="fu">fluidPage</span>(</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sliderInput</span>(<span class="st">"n"</span>, <span class="st">"観測数"</span>, <span class="at">min =</span> <span class="dv">10</span>, <span class="at">max =</span> <span class="dv">1000</span>, <span class="at">value =</span> <span class="dv">100</span>),</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plotOutput</span>(<span class="st">"histogram"</span>)</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>server <span class="ot">&lt;-</span> <span class="cf">function</span>(input, output, session) {</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>  output<span class="sc">$</span>histogram <span class="ot">&lt;-</span> <span class="fu">renderPlot</span>({</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">hist</span>(<span class="fu">rnorm</span>(input<span class="sc">$</span>n))</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="fu">shinyApp</span>(ui, server)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<ul>
+<li><code>input$n</code>：ユーザーの入力値</li>
+<li><code>output$histogram</code>：画面へ返す出力</li>
+<li><code>renderPlot()</code>：出力を作る処理</li>
+<li><code>plotOutput()</code>：出力を置くUI領域</li>
+</ul>
+<section id="リアクティブグラフとして考える" class="level2" data-number="3.1">
+<h2 data-number="3.1" class="anchored" data-anchor-id="リアクティブグラフとして考える"><span class="header-section-number">3.1</span> リアクティブグラフとして考える</h2>
+<p>Shinyでは、コードを上から一度だけ実行するのではなく、入力が変わったときに必要な部分だけが再計算されます。</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>flowchart TD</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  Y[input year] --&gt; M[map_data]</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  K[input metric] --&gt; M</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  P[input pref_code] --&gt; M</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  M --&gt; MAP[map]</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  M --&gt; RANK[ranking_data]</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  RANK --&gt; KPI[value / rank]</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  RANK --&gt; PLOT[ranking plot]</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  P --&gt; TREND[time-series plot]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<p><code>reactive()</code>で作った中間結果は、依存する入力が変わらない限り再計算結果がキャッシュされます。複数の出力で同じ加工を繰り返すより、共通のリアクティブデータを作る方が安全です。</p>
+</section>
+</section>
+<section id="データをどこで読むか" class="level1" data-number="4">
+<h1 data-number="4"><span class="header-section-number">4</span> データをどこで読むか</h1>
+<section id="不変データはserverの外で一度だけ読む" class="level2" data-number="4.1">
+<h2 data-number="4.1" class="anchored" data-anchor-id="不変データはserverの外で一度だけ読む"><span class="header-section-number">4.1</span> 不変データは<code>server</code>の外で一度だけ読む</h2>
+<p>完成アプリの冒頭では、RDSを<code>server</code>の外で読みます。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(shiny)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(bslib)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyr)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sf)</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(leaflet)</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DT)</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(scales)</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>project_dir <span class="ot">&lt;-</span> <span class="fu">normalizePath</span>(</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">file.path</span>(<span class="fu">getwd</span>(), <span class="st">".."</span>, <span class="st">".."</span>),</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">winslash =</span> <span class="st">"/"</span>,</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">mustWork =</span> <span class="cn">TRUE</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>data_path <span class="ot">&lt;-</span> <span class="fu">file.path</span>(</span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>  project_dir,</span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>  <span class="st">"data_clean"</span>,</span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>  <span class="st">"kanto_dashboard_data.rds"</span></span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>bundle <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(data_path)</span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a>pref_geometry <span class="ot">&lt;-</span> bundle<span class="sc">$</span>pref_geometry</span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>pref_panel <span class="ot">&lt;-</span> bundle<span class="sc">$</span>pref_panel</span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a>pref_agri <span class="ot">&lt;-</span> bundle<span class="sc">$</span>pref_agri</span>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a>pref_profile <span class="ot">&lt;-</span> bundle<span class="sc">$</span>pref_profile</span>
+<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a>station_points <span class="ot">&lt;-</span> bundle<span class="sc">$</span>station_points</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>この位置のコードは、アプリのRプロセス起動時に一度実行されます。ユーザーが年を変えるたびにExcel、shapefile、APIを読み直す設計にはしません。</p>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>APIをリアクティブ処理の中で毎回呼ばない
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>API障害、通信遅延、回数制限、レスポンス変更がアプリ操作へ直結します。更新ボタンを設ける場合でも、取得・検証・保存を別処理にし、通常画面は検証済みスナップショットを読みます。</p>
+</div>
+</div>
+</section>
+<section id="rdsの中身を監査する" class="level2" data-number="4.2">
+<h2 data-number="4.2" class="anchored" data-anchor-id="rdsの中身を監査する"><span class="header-section-number">4.2</span> RDSの中身を監査する</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tibble</span>(</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">object =</span> <span class="fu">names</span>(bundle),</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">class =</span> <span class="fu">map_chr</span>(bundle, <span class="sc">~</span> <span class="fu">paste</span>(<span class="fu">class</span>(.x), <span class="at">collapse =</span> <span class="st">"/"</span>)),</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">rows =</span> <span class="fu">map_int</span>(bundle, <span class="sc">~</span> <span class="cf">if</span> (<span class="fu">is.data.frame</span>(.x)) <span class="fu">nrow</span>(.x) <span class="cf">else</span> <span class="cn">NA_integer_</span>)</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>最低限、次を確認します。</p>
+<ul>
+<li><code>pref_geometry</code>が7行の<code>sf</code>である。</li>
+<li><code>pref_panel</code>のキーが<code>code × year</code>で一意である。</li>
+<li><code>station_points</code>がpoint geometryである。</li>
+<li>経済指標は2011～2021年、駅データは2024年度である。</li>
+</ul>
+</section>
+</section>
+<section id="uiを情報階層から設計する" class="level1" data-number="5">
+<h1 data-number="5"><span class="header-section-number">5</span> UIを情報階層から設計する</h1>
+<section id="先に誰が何を知りたいかを決める" class="level2" data-number="5.1">
+<h2 data-number="5.1" class="anchored" data-anchor-id="先に誰が何を知りたいかを決める"><span class="header-section-number">5.1</span> 先に「誰が何を知りたいか」を決める</h2>
+<p>このアプリの利用者を、関東の地域経済を概観する政策・調査担当者と想定します。</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>優先度</th>
+<th>問い</th>
+<th>UI部品</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td>どの都県が大きいか</td>
+<td>塗り分け地図、ランキング</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td>選択都県の水準・順位は</td>
+<td>value box</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td>時系列でどう変化したか</td>
+<td>折れ線グラフ</td>
+</tr>
+<tr class="even">
+<td>4</td>
+<td>駅の分布と規模は</td>
+<td>円マーカー、しきい値</td>
+</tr>
+<tr class="odd">
+<td>5</td>
+<td>背景属性は</td>
+<td>人口、農林業シェア、注記</td>
+</tr>
+</tbody>
+</table>
+<p>「作れる部品を並べる」のではなく、問いの優先度からレイアウトを決めます。</p>
+</section>
+<section id="bslibでダッシュボード骨格を作る" class="level2" data-number="5.2">
+<h2 data-number="5.2" class="anchored" data-anchor-id="bslibでダッシュボード骨格を作る"><span class="header-section-number">5.2</span> <code>bslib</code>でダッシュボード骨格を作る</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>ui <span class="ot">&lt;-</span> <span class="fu">page_sidebar</span>(</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">title =</span> <span class="st">"関東の地域経済・鉄道ダッシュボード"</span>,</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">theme =</span> <span class="fu">bs_theme</span>(</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">version =</span> <span class="dv">5</span>,</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">bootswatch =</span> <span class="st">"flatly"</span>,</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">primary =</span> <span class="st">"#2166ac"</span>,</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">secondary =</span> <span class="st">"#5ab4ac"</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">sidebar =</span> <span class="fu">sidebar</span>(</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">selectInput</span>(<span class="st">"year"</span>, <span class="st">"地図の年"</span>, <span class="at">choices =</span> <span class="dv">2011</span><span class="sc">:</span><span class="dv">2021</span>),</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">selectInput</span>(</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>      <span class="st">"metric"</span>,</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>      <span class="st">"地図の指標"</span>,</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>      <span class="at">choices =</span> <span class="fu">c</span>(</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>        <span class="st">"県内総生産"</span> <span class="ot">=</span> <span class="st">"gdp"</span>,</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>        <span class="st">"雇用者報酬"</span> <span class="ot">=</span> <span class="st">"compensation"</span>,</span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>        <span class="st">"雇用者報酬 / GDP"</span> <span class="ot">=</span> <span class="st">"compensation_to_gdp"</span></span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">selectInput</span>(<span class="st">"pref_code"</span>, <span class="st">"選択する都県"</span>, <span class="at">choices =</span> <span class="cn">NULL</span>),</span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sliderInput</span>(</span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>      <span class="st">"min_passengers"</span>,</span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>      <span class="st">"表示する駅の最小乗降客数（人 / 日）"</span>,</span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a>      <span class="at">min =</span> <span class="dv">0</span>,</span>
+<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a>      <span class="at">max =</span> <span class="dv">100000</span>,</span>
+<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a>      <span class="at">value =</span> <span class="dv">20000</span>,</span>
+<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a>      <span class="at">step =</span> <span class="dv">5000</span></span>
+<span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a>    <span class="fu">checkboxInput</span>(<span class="st">"show_stations"</span>, <span class="st">"駅を表示する"</span>, <span class="at">value =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a>    <span class="fu">checkboxInput</span>(</span>
+<span id="cb12-31"><a href="#cb12-31" aria-hidden="true" tabindex="-1"></a>      <span class="st">"fixed_scale"</span>,</span>
+<span id="cb12-32"><a href="#cb12-32" aria-hidden="true" tabindex="-1"></a>      <span class="st">"年をまたいで色尺度を固定する"</span>,</span>
+<span id="cb12-33"><a href="#cb12-33" aria-hidden="true" tabindex="-1"></a>      <span class="at">value =</span> <span class="cn">TRUE</span></span>
+<span id="cb12-34"><a href="#cb12-34" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb12-35"><a href="#cb12-35" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb12-36"><a href="#cb12-36" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>技術的なIDは<code>year</code>、<code>metric</code>などASCIIで統一し、画面に見せるラベルは日本語にします。</p>
+</section>
+<section id="value-boxを置く" class="level2" data-number="5.3">
+<h2 data-number="5.3" class="anchored" data-anchor-id="value-boxを置く"><span class="header-section-number">5.3</span> value boxを置く</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">layout_columns</span>(</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">col_widths =</span> <span class="fu">c</span>(<span class="dv">3</span>, <span class="dv">3</span>, <span class="dv">3</span>, <span class="dv">3</span>),</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">value_box</span>(</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"選択値"</span>,</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">textOutput</span>(<span class="st">"selected_value"</span>, <span class="at">inline =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">showcase =</span> <span class="fu">icon</span>(<span class="st">"chart-bar"</span>),</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">theme =</span> <span class="st">"primary"</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">value_box</span>(</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"関東内順位"</span>,</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">textOutput</span>(<span class="st">"selected_rank"</span>, <span class="at">inline =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">showcase =</span> <span class="fu">icon</span>(<span class="st">"trophy"</span>),</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">theme =</span> <span class="st">"info"</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">value_box</span>(</span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"前年比"</span>,</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">textOutput</span>(<span class="st">"selected_yoy"</span>, <span class="at">inline =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">showcase =</span> <span class="fu">icon</span>(<span class="st">"arrow-up"</span>),</span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">theme =</span> <span class="st">"success"</span></span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">value_box</span>(</span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"条件を満たす駅数"</span>,</span>
+<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">textOutput</span>(<span class="st">"selected_station_count"</span>, <span class="at">inline =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">showcase =</span> <span class="fu">icon</span>(<span class="st">"train"</span>),</span>
+<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>    <span class="at">theme =</span> <span class="st">"warning"</span></span>
+<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>KPIは「大きい数字を置く場所」ではなく、現在の選択条件を短時間で確認する場所です。単位、年、母集団が曖昧なKPIは誤解を生みます。</p>
+</section>
+</section>
+<section id="入力候補をデータから作る" class="level1" data-number="6">
+<h1 data-number="6"><span class="header-section-number">6</span> 入力候補をデータから作る</h1>
+<p>ハードコードではなく、RDSの中身から選択肢を作ります。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>pref_choices <span class="ot">&lt;-</span> stats<span class="sc">::</span><span class="fu">setNames</span>(</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  pref_geometry<span class="sc">$</span>code,</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  pref_geometry<span class="sc">$</span>pref</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>year_choices <span class="ot">&lt;-</span> <span class="fu">sort</span>(<span class="fu">unique</span>(pref_panel<span class="sc">$</span>year))</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>metric_spec <span class="ot">&lt;-</span> tibble<span class="sc">::</span><span class="fu">tribble</span>(</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>  <span class="sc">~</span>metric, <span class="sc">~</span>label, <span class="sc">~</span>short_label, <span class="sc">~</span>unit, <span class="sc">~</span>palette,</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>  <span class="st">"gdp"</span>, <span class="st">"県内総生産"</span>, <span class="st">"GDP"</span>, <span class="st">"百万円"</span>, <span class="st">"Blues"</span>,</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>  <span class="st">"compensation"</span>, <span class="st">"雇用者報酬"</span>, <span class="st">"雇用者報酬"</span>, <span class="st">"百万円"</span>, <span class="st">"Greens"</span>,</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>  <span class="st">"compensation_to_gdp"</span>, <span class="st">"雇用者報酬 / GDP"</span>, <span class="st">"雇用者報酬比率"</span>, <span class="st">"％"</span>, <span class="st">"Purples"</span></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>metric_choices <span class="ot">&lt;-</span> stats<span class="sc">::</span><span class="fu">setNames</span>(</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>  metric_spec<span class="sc">$</span>metric,</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>  metric_spec<span class="sc">$</span>label</span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><code>metric_spec</code>へラベル、単位、パレットをまとめると、条件分岐を複数箇所へ散らさずに済みます。</p>
+</section>
+<section id="共通のリアクティブデータを作る" class="level1" data-number="7">
+<h1 data-number="7"><span class="header-section-number">7</span> 共通のリアクティブデータを作る</h1>
+<section id="選択中の指標定義" class="level2" data-number="7.1">
+<h2 data-number="7.1" class="anchored" data-anchor-id="選択中の指標定義"><span class="header-section-number">7.1</span> 選択中の指標定義</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>selected_spec <span class="ot">&lt;-</span> <span class="fu">reactive</span>({</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  metric_spec <span class="sc">|&gt;</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(metric <span class="sc">==</span> input<span class="sc">$</span>metric) <span class="sc">|&gt;</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">slice</span>(<span class="dv">1</span>)</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="地図用データ" class="level2" data-number="7.2">
+<h2 data-number="7.2" class="anchored" data-anchor-id="地図用データ"><span class="header-section-number">7.2</span> 地図用データ</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>map_data <span class="ot">&lt;-</span> <span class="fu">reactive</span>({</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">req</span>(input<span class="sc">$</span>year, input<span class="sc">$</span>metric, input<span class="sc">$</span>pref_code)</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>  panel_year <span class="ot">&lt;-</span> pref_panel <span class="sc">|&gt;</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(year <span class="sc">==</span> <span class="fu">as.integer</span>(input<span class="sc">$</span>year))</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>  result <span class="ot">&lt;-</span> pref_geometry <span class="sc">|&gt;</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">left_join</span>(</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>      panel_year,</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>      <span class="at">by =</span> <span class="fu">join_by</span>(code, pref),</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>      <span class="at">relationship =</span> <span class="st">"one-to-one"</span></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>  result<span class="sc">$</span>map_value <span class="ot">&lt;-</span> result[[input<span class="sc">$</span>metric]]</span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>  result<span class="sc">$</span>border_weight <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(</span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a>    result<span class="sc">$</span>code <span class="sc">==</span> input<span class="sc">$</span>pref_code,</span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>    <span class="dv">4</span>,</span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a>    <span class="dv">1</span></span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a>  result</span>
+<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>ここでは、地図のgeometry、選択年の経済指標、選択中の境界線強調を一つにまとめています。</p>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>動的列選択
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><code>result[[input$metric]]</code>は、入力文字列に対応する列をベクトルとして取り出します。<code>aes(fill = input$metric)</code>と書くと文字列そのものを色へ割り当てることがあるため、動的列指定の仕組みを理解してください。</p>
+</div>
+</div>
+</section>
+<section id="ランキングと選択行" class="level2" data-number="7.3">
+<h2 data-number="7.3" class="anchored" data-anchor-id="ランキングと選択行"><span class="header-section-number">7.3</span> ランキングと選択行</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>ranking_data <span class="ot">&lt;-</span> <span class="fu">reactive</span>({</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">map_data</span>() <span class="sc">|&gt;</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">st_drop_geometry</span>() <span class="sc">|&gt;</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">arrange</span>(<span class="fu">desc</span>(map_value)) <span class="sc">|&gt;</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">rank =</span> <span class="fu">row_number</span>())</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>selected_row <span class="ot">&lt;-</span> <span class="fu">reactive</span>({</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ranking_data</span>() <span class="sc">|&gt;</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(code <span class="sc">==</span> input<span class="sc">$</span>pref_code) <span class="sc">|&gt;</span></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">slice</span>(<span class="dv">1</span>)</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>同じ順位計算をKPI、グラフ、表で繰り返さず、<code>ranking_data()</code>を共有します。</p>
+</section>
+<section id="駅のフィルター" class="level2" data-number="7.4">
+<h2 data-number="7.4" class="anchored" data-anchor-id="駅のフィルター"><span class="header-section-number">7.4</span> 駅のフィルター</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>filtered_stations <span class="ot">&lt;-</span> <span class="fu">reactive</span>({</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  station_points <span class="sc">|&gt;</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(passengers_2024 <span class="sc">&gt;=</span> input<span class="sc">$</span>min_passengers) <span class="sc">|&gt;</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>      <span class="at">marker_radius =</span> <span class="fu">pmax</span>(</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>        <span class="dv">3</span>,</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>        <span class="fu">pmin</span>(<span class="dv">13</span>, <span class="fu">sqrt</span>(passengers_2024) <span class="sc">/</span> <span class="dv">45</span>)</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>乗降客数をそのまま半径にすると、最大駅が画面を覆います。平方根変換と上下限を使い、面積感覚と視認性を調整します。</p>
+</section>
+</section>
+<section id="leaflet地図を効率的に更新する" class="level1" data-number="8">
+<h1 data-number="8"><span class="header-section-number">8</span> Leaflet地図を効率的に更新する</h1>
+<section id="地図本体は一度だけ作る" class="level2" data-number="8.1">
+<h2 data-number="8.1" class="anchored" data-anchor-id="地図本体は一度だけ作る"><span class="header-section-number">8.1</span> 地図本体は一度だけ作る</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>output<span class="sc">$</span>map <span class="ot">&lt;-</span> <span class="fu">renderLeaflet</span>({</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  bbox <span class="ot">&lt;-</span> <span class="fu">st_bbox</span>(pref_geometry)</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">leaflet</span>(<span class="at">options =</span> <span class="fu">leafletOptions</span>(<span class="at">preferCanvas =</span> <span class="cn">TRUE</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">addProviderTiles</span>(providers<span class="sc">$</span>CartoDB.Positron) <span class="sc">|&gt;</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">fitBounds</span>(</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">lng1 =</span> bbox[[<span class="st">"xmin"</span>]],</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>      <span class="at">lat1 =</span> bbox[[<span class="st">"ymin"</span>]],</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>      <span class="at">lng2 =</span> bbox[[<span class="st">"xmax"</span>]],</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>      <span class="at">lat2 =</span> bbox[[<span class="st">"ymax"</span>]]</span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="leafletproxyでレイヤーだけ更新する" class="level2" data-number="8.2">
+<h2 data-number="8.2" class="anchored" data-anchor-id="leafletproxyでレイヤーだけ更新する"><span class="header-section-number">8.2</span> <code>leafletProxy()</code>でレイヤーだけ更新する</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">observe</span>({</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>  current_map <span class="ot">&lt;-</span> <span class="fu">map_data</span>()</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>  spec <span class="ot">&lt;-</span> <span class="fu">selected_spec</span>()</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>  palette_domain <span class="ot">&lt;-</span> <span class="cf">if</span> (<span class="fu">isTRUE</span>(input<span class="sc">$</span>fixed_scale)) {</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>    pref_panel[[input<span class="sc">$</span>metric]]</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>    current_map<span class="sc">$</span>map_value</span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>  palette <span class="ot">&lt;-</span> <span class="fu">colorNumeric</span>(</span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">palette =</span> spec<span class="sc">$</span>palette,</span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">domain =</span> palette_domain,</span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">na.color =</span> <span class="st">"#d9d9d9"</span></span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">leafletProxy</span>(<span class="st">"map"</span>, <span class="at">data =</span> current_map) <span class="sc">|&gt;</span></span>
+<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">clearGroup</span>(<span class="st">"prefectures"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb20-19"><a href="#cb20-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">clearControls</span>() <span class="sc">|&gt;</span></span>
+<span id="cb20-20"><a href="#cb20-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">addPolygons</span>(</span>
+<span id="cb20-21"><a href="#cb20-21" aria-hidden="true" tabindex="-1"></a>      <span class="at">group =</span> <span class="st">"prefectures"</span>,</span>
+<span id="cb20-22"><a href="#cb20-22" aria-hidden="true" tabindex="-1"></a>      <span class="at">layerId =</span> <span class="sc">~</span> code,</span>
+<span id="cb20-23"><a href="#cb20-23" aria-hidden="true" tabindex="-1"></a>      <span class="at">fillColor =</span> <span class="sc">~</span> <span class="fu">palette</span>(map_value),</span>
+<span id="cb20-24"><a href="#cb20-24" aria-hidden="true" tabindex="-1"></a>      <span class="at">fillOpacity =</span> <span class="fl">0.78</span>,</span>
+<span id="cb20-25"><a href="#cb20-25" aria-hidden="true" tabindex="-1"></a>      <span class="at">color =</span> <span class="st">"#ffffff"</span>,</span>
+<span id="cb20-26"><a href="#cb20-26" aria-hidden="true" tabindex="-1"></a>      <span class="at">weight =</span> <span class="sc">~</span> border_weight,</span>
+<span id="cb20-27"><a href="#cb20-27" aria-hidden="true" tabindex="-1"></a>      <span class="at">label =</span> <span class="sc">~</span> pref,</span>
+<span id="cb20-28"><a href="#cb20-28" aria-hidden="true" tabindex="-1"></a>      <span class="at">highlightOptions =</span> <span class="fu">highlightOptions</span>(</span>
+<span id="cb20-29"><a href="#cb20-29" aria-hidden="true" tabindex="-1"></a>        <span class="at">weight =</span> <span class="dv">4</span>,</span>
+<span id="cb20-30"><a href="#cb20-30" aria-hidden="true" tabindex="-1"></a>        <span class="at">color =</span> <span class="st">"#222222"</span>,</span>
+<span id="cb20-31"><a href="#cb20-31" aria-hidden="true" tabindex="-1"></a>        <span class="at">bringToFront =</span> <span class="cn">TRUE</span></span>
+<span id="cb20-32"><a href="#cb20-32" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb20-33"><a href="#cb20-33" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">|&gt;</span></span>
+<span id="cb20-34"><a href="#cb20-34" aria-hidden="true" tabindex="-1"></a>    <span class="fu">addLegend</span>(</span>
+<span id="cb20-35"><a href="#cb20-35" aria-hidden="true" tabindex="-1"></a>      <span class="at">position =</span> <span class="st">"bottomright"</span>,</span>
+<span id="cb20-36"><a href="#cb20-36" aria-hidden="true" tabindex="-1"></a>      <span class="at">pal =</span> palette,</span>
+<span id="cb20-37"><a href="#cb20-37" aria-hidden="true" tabindex="-1"></a>      <span class="at">values =</span> <span class="sc">~</span> map_value,</span>
+<span id="cb20-38"><a href="#cb20-38" aria-hidden="true" tabindex="-1"></a>      <span class="at">title =</span> <span class="fu">paste0</span>(spec<span class="sc">$</span>short_label, <span class="st">" ("</span>, input<span class="sc">$</span>year, <span class="st">")"</span>)</span>
+<span id="cb20-39"><a href="#cb20-39" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb20-40"><a href="#cb20-40" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><code>renderLeaflet()</code>で地図全体を毎回作り直すと、ズームや表示状態もリセットされます。<code>leafletProxy()</code>は既存の地図へ差分を送るため、操作感が安定します。</p>
+<p>色尺度を年ごとに作り直すと、同じ色が別の年では別の値を表します。完成例では「年をまたいで色尺度を固定する」を初期値<code>TRUE</code>とし、時系列比較時の読み違いを防ぎます。年内の差を強調したい場合だけOFFにします。</p>
+</section>
+<section id="駅レイヤーを独立して更新する" class="level2" data-number="8.3">
+<h2 data-number="8.3" class="anchored" data-anchor-id="駅レイヤーを独立して更新する"><span class="header-section-number">8.3</span> 駅レイヤーを独立して更新する</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">observe</span>({</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  proxy <span class="ot">&lt;-</span> <span class="fu">leafletProxy</span>(<span class="st">"map"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">clearGroup</span>(<span class="st">"stations"</span>)</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">isTRUE</span>(input<span class="sc">$</span>show_stations)) {</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>    proxy <span class="sc">|&gt;</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>      <span class="fu">addCircleMarkers</span>(</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>        <span class="at">data =</span> <span class="fu">filtered_stations</span>(),</span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>        <span class="at">group =</span> <span class="st">"stations"</span>,</span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>        <span class="at">radius =</span> <span class="sc">~</span> marker_radius,</span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>        <span class="at">color =</span> <span class="st">"#8c2d04"</span>,</span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>        <span class="at">fillColor =</span> <span class="st">"#fe9929"</span>,</span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a>        <span class="at">fillOpacity =</span> <span class="fl">0.75</span>,</span>
+<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a>        <span class="at">label =</span> <span class="sc">~</span> station_name</span>
+<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb21-16"><a href="#cb21-16" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb21-17"><a href="#cb21-17" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>都県ポリゴンの更新と駅の更新を分けると、依存する入力も分かれます。</p>
+</section>
+</section>
+<section id="地図クリックと入力欄を同期する" class="level1" data-number="9">
+<h1 data-number="9"><span class="header-section-number">9</span> 地図クリックと入力欄を同期する</h1>
+<p><code>layerId = ~ code</code>を付けたポリゴンをクリックすると、<code>input$map_shape_click$id</code>へ都県コードが入ります。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">observeEvent</span>(input<span class="sc">$</span>map_shape_click, {</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  clicked_code <span class="ot">&lt;-</span> input<span class="sc">$</span>map_shape_click<span class="sc">$</span>id</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(clicked_code) <span class="sc">&amp;&amp;</span> clicked_code <span class="sc">%in%</span> pref_geometry<span class="sc">$</span>code) {</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">updateSelectInput</span>(</span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>      session,</span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>      <span class="st">"pref_code"</span>,</span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>      <span class="at">selected =</span> clicked_code</span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>この処理により、地図とプルダウンが同じ状態を表します。</p>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>更新ループに注意
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>入力Aの変更で入力Bを更新し、入力Bの変更で入力Aを更新すると、無限に更新し合う設計になることがあります。入力の「唯一の状態源」を意識し、必要なら<code>ignoreInit</code>、<code>freezeReactiveValue()</code>、条件分岐を使います。</p>
+</div>
+</div>
+</section>
+<section id="kpiを作る" class="level1" data-number="10">
+<h1 data-number="10"><span class="header-section-number">10</span> KPIを作る</h1>
+<section id="選択値と順位" class="level2" data-number="10.1">
+<h2 data-number="10.1" class="anchored" data-anchor-id="選択値と順位"><span class="header-section-number">10.1</span> 選択値と順位</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>output<span class="sc">$</span>selected_value <span class="ot">&lt;-</span> <span class="fu">renderText</span>({</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  row <span class="ot">&lt;-</span> <span class="fu">selected_row</span>()</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">req</span>(<span class="fu">nrow</span>(row) <span class="sc">==</span> <span class="dv">1</span>)</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (input<span class="sc">$</span>metric <span class="sc">==</span> <span class="st">"compensation_to_gdp"</span>) {</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">label_percent</span>(<span class="at">accuracy =</span> <span class="fl">0.1</span>)(row<span class="sc">$</span>map_value)</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">label_number</span>(<span class="at">big.mark =</span> <span class="st">","</span>, <span class="at">accuracy =</span> <span class="dv">1</span>)(row<span class="sc">$</span>map_value)</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>output<span class="sc">$</span>selected_rank <span class="ot">&lt;-</span> <span class="fu">renderText</span>({</span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>  row <span class="ot">&lt;-</span> <span class="fu">selected_row</span>()</span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">req</span>(<span class="fu">nrow</span>(row) <span class="sc">==</span> <span class="dv">1</span>)</span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">paste0</span>(row<span class="sc">$</span>rank, <span class="st">" / "</span>, <span class="fu">nrow</span>(<span class="fu">ranking_data</span>()))</span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="前年比" class="level2" data-number="10.2">
+<h2 data-number="10.2" class="anchored" data-anchor-id="前年比"><span class="header-section-number">10.2</span> 前年比</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>previous_value <span class="ot">&lt;-</span> <span class="fu">reactive</span>({</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>  pref_panel <span class="sc">|&gt;</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>      code <span class="sc">==</span> input<span class="sc">$</span>pref_code,</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>      year <span class="sc">==</span> <span class="fu">as.integer</span>(input<span class="sc">$</span>year) <span class="sc">-</span> <span class="dv">1</span>L</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">|&gt;</span></span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pull</span>(<span class="fu">all_of</span>(input<span class="sc">$</span>metric)) <span class="sc">|&gt;</span></span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">first</span>(<span class="at">default =</span> <span class="cn">NA_real_</span>)</span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>output<span class="sc">$</span>selected_yoy <span class="ot">&lt;-</span> <span class="fu">renderText</span>({</span>
+<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a>  current <span class="ot">&lt;-</span> <span class="fu">selected_row</span>()<span class="sc">$</span>map_value</span>
+<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a>  previous <span class="ot">&lt;-</span> <span class="fu">previous_value</span>()</span>
+<span id="cb24-14"><a href="#cb24-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-15"><a href="#cb24-15" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">is.na</span>(previous) <span class="sc">||</span> previous <span class="sc">==</span> <span class="dv">0</span>) {</span>
+<span id="cb24-16"><a href="#cb24-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(<span class="st">"NA"</span>)</span>
+<span id="cb24-17"><a href="#cb24-17" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb24-18"><a href="#cb24-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-19"><a href="#cb24-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">label_percent</span>(<span class="at">accuracy =</span> <span class="fl">0.1</span>)(current <span class="sc">/</span> previous <span class="sc">-</span> <span class="dv">1</span>)</span>
+<span id="cb24-20"><a href="#cb24-20" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>最初の年は前年値がないため<code>NA</code>です。エラーを隠すために0へ置換しません。</p>
+</section>
+<section id="条件を満たす駅数" class="level2" data-number="10.3">
+<h2 data-number="10.3" class="anchored" data-anchor-id="条件を満たす駅数"><span class="header-section-number">10.3</span> 条件を満たす駅数</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>output<span class="sc">$</span>selected_station_count <span class="ot">&lt;-</span> <span class="fu">renderText</span>({</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>  station_count <span class="ot">&lt;-</span> <span class="fu">filtered_stations</span>() <span class="sc">|&gt;</span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(pref_code <span class="sc">==</span> input<span class="sc">$</span>pref_code) <span class="sc">|&gt;</span></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">nrow</span>()</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">label_number</span>(<span class="at">big.mark =</span> <span class="st">","</span>, <span class="at">accuracy =</span> <span class="dv">1</span>)(station_count)</span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>このKPIは、しきい値を変えると更新されます。全駅数とは異なるため、タイトルを「駅数」ではなく「条件を満たす駅数」としています。</p>
+</section>
+</section>
+<section id="時系列ランキング表を連動させる" class="level1" data-number="11">
+<h1 data-number="11"><span class="header-section-number">11</span> 時系列・ランキング・表を連動させる</h1>
+<section id="選択都県の時系列" class="level2" data-number="11.1">
+<h2 data-number="11.1" class="anchored" data-anchor-id="選択都県の時系列"><span class="header-section-number">11.1</span> 選択都県の時系列</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>output<span class="sc">$</span>trend_plot <span class="ot">&lt;-</span> <span class="fu">renderPlot</span>({</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>  trend <span class="ot">&lt;-</span> pref_panel <span class="sc">|&gt;</span></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(code <span class="sc">==</span> input<span class="sc">$</span>pref_code) <span class="sc">|&gt;</span></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(year, gdp, compensation) <span class="sc">|&gt;</span></span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pivot_longer</span>(</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>      <span class="at">cols =</span> <span class="fu">c</span>(gdp, compensation),</span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">names_to =</span> <span class="st">"series"</span>,</span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>      <span class="at">values_to =</span> <span class="st">"value"</span></span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">|&gt;</span></span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(</span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>      <span class="at">series =</span> <span class="fu">recode</span>(</span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a>        series,</span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a>        <span class="at">gdp =</span> <span class="st">"県内総生産"</span>,</span>
+<span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a>        <span class="at">compensation =</span> <span class="st">"雇用者報酬"</span></span>
+<span id="cb26-15"><a href="#cb26-15" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb26-16"><a href="#cb26-16" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb26-17"><a href="#cb26-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-18"><a href="#cb26-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(trend, <span class="fu">aes</span>(<span class="at">x =</span> year, <span class="at">y =</span> value, <span class="at">color =</span> series)) <span class="sc">+</span></span>
+<span id="cb26-19"><a href="#cb26-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_line</span>(<span class="at">linewidth =</span> <span class="fl">1.1</span>) <span class="sc">+</span></span>
+<span id="cb26-20"><a href="#cb26-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb26-21"><a href="#cb26-21" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> <span class="fu">label_number</span>(<span class="at">big.mark =</span> <span class="st">","</span>)) <span class="sc">+</span></span>
+<span id="cb26-22"><a href="#cb26-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="cn">NULL</span>, <span class="at">y =</span> <span class="st">"百万円"</span>, <span class="at">color =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
+<span id="cb26-23"><a href="#cb26-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">12</span>) <span class="sc">+</span></span>
+<span id="cb26-24"><a href="#cb26-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"bottom"</span>)</span>
+<span id="cb26-25"><a href="#cb26-25" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="ランキンググラフ" class="level2" data-number="11.2">
+<h2 data-number="11.2" class="anchored" data-anchor-id="ランキンググラフ"><span class="header-section-number">11.2</span> ランキンググラフ</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>output<span class="sc">$</span>ranking_plot <span class="ot">&lt;-</span> <span class="fu">renderPlot</span>({</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>  plot_data <span class="ot">&lt;-</span> <span class="fu">ranking_data</span>() <span class="sc">|&gt;</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">selected =</span> code <span class="sc">==</span> input<span class="sc">$</span>pref_code)</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(</span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>    plot_data,</span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">aes</span>(</span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>      <span class="at">x =</span> <span class="fu">reorder</span>(pref, map_value),</span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>      <span class="at">y =</span> map_value,</span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a>      <span class="at">fill =</span> selected</span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_col</span>() <span class="sc">+</span></span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">coord_flip</span>() <span class="sc">+</span></span>
+<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_fill_manual</span>(</span>
+<span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a>      <span class="at">values =</span> <span class="fu">c</span>(<span class="st">`</span><span class="at">FALSE</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#bdbdbd"</span>, <span class="st">`</span><span class="at">TRUE</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#2166ac"</span>),</span>
+<span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a>      <span class="at">guide =</span> <span class="st">"none"</span></span>
+<span id="cb27-18"><a href="#cb27-18" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">+</span></span>
+<span id="cb27-19"><a href="#cb27-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="cn">NULL</span>, <span class="at">y =</span> <span class="fu">selected_spec</span>()<span class="sc">$</span>unit) <span class="sc">+</span></span>
+<span id="cb27-20"><a href="#cb27-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">12</span>)</span>
+<span id="cb27-21"><a href="#cb27-21" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>選択中の都県だけ色を変え、地図・プルダウン・ランキングの状態を一致させます。</p>
+</section>
+<section id="dtによる表" class="level2" data-number="11.3">
+<h2 data-number="11.3" class="anchored" data-anchor-id="dtによる表"><span class="header-section-number">11.3</span> <code>DT</code>による表</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>output<span class="sc">$</span>ranking_table <span class="ot">&lt;-</span> <span class="fu">renderDT</span>({</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>  table_data <span class="ot">&lt;-</span> <span class="fu">ranking_data</span>() <span class="sc">|&gt;</span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">transmute</span>(</span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>      rank,</span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>      <span class="at">prefecture =</span> pref,</span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>      <span class="at">value =</span> map_value</span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">datatable</span>(</span>
+<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a>    table_data,</span>
+<span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">rownames =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb28-12"><a href="#cb28-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">selection =</span> <span class="st">"none"</span>,</span>
+<span id="cb28-13"><a href="#cb28-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">options =</span> <span class="fu">list</span>(</span>
+<span id="cb28-14"><a href="#cb28-14" aria-hidden="true" tabindex="-1"></a>      <span class="at">pageLength =</span> <span class="dv">7</span>,</span>
+<span id="cb28-15"><a href="#cb28-15" aria-hidden="true" tabindex="-1"></a>      <span class="at">lengthChange =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb28-16"><a href="#cb28-16" aria-hidden="true" tabindex="-1"></a>      <span class="at">searching =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb28-17"><a href="#cb28-17" aria-hidden="true" tabindex="-1"></a>      <span class="at">ordering =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb28-18"><a href="#cb28-18" aria-hidden="true" tabindex="-1"></a>      <span class="at">dom =</span> <span class="st">"t"</span></span>
+<span id="cb28-19"><a href="#cb28-19" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb28-20"><a href="#cb28-20" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb28-21"><a href="#cb28-21" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>表はグラフの代替ではなく、正確な数値を確認する役割を持ちます。</p>
+</section>
+</section>
+<section id="第2章第6章の背景属性を表示する" class="level1" data-number="12">
+<h1 data-number="12"><span class="header-section-number">12</span> 第2章・第6章の背景属性を表示する</h1>
+<p>選択都県について、次を文章で表示します。</p>
+<ul>
+<li>第2章のe-Stat API：2020年人口</li>
+<li>第6章C：2020年一人当たりGDP</li>
+<li>第6章C：2021年農林業シェア</li>
+<li>第7章：2024年度の駅数</li>
+</ul>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>output<span class="sc">$</span>profile_text <span class="ot">&lt;-</span> <span class="fu">renderUI</span>({</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>  profile_row <span class="ot">&lt;-</span> pref_profile <span class="sc">|&gt;</span></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(code <span class="sc">==</span> input<span class="sc">$</span>pref_code) <span class="sc">|&gt;</span></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">slice</span>(<span class="dv">1</span>)</span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>  agri_row <span class="ot">&lt;-</span> pref_agri <span class="sc">|&gt;</span></span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(code <span class="sc">==</span> input<span class="sc">$</span>pref_code, year <span class="sc">==</span> <span class="dv">2021</span>) <span class="sc">|&gt;</span></span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">slice</span>(<span class="dv">1</span>)</span>
+<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a>  station_total <span class="ot">&lt;-</span> station_points <span class="sc">|&gt;</span></span>
+<span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(pref_code <span class="sc">==</span> input<span class="sc">$</span>pref_code) <span class="sc">|&gt;</span></span>
+<span id="cb29-12"><a href="#cb29-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">nrow</span>()</span>
+<span id="cb29-13"><a href="#cb29-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-14"><a href="#cb29-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tagList</span>(</span>
+<span id="cb29-15"><a href="#cb29-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">p</span>(<span class="fu">strong</span>(<span class="fu">selected_row</span>()<span class="sc">$</span>pref)),</span>
+<span id="cb29-16"><a href="#cb29-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">p</span>(</span>
+<span id="cb29-17"><a href="#cb29-17" aria-hidden="true" tabindex="-1"></a>      <span class="fu">paste0</span>(</span>
+<span id="cb29-18"><a href="#cb29-18" aria-hidden="true" tabindex="-1"></a>        <span class="st">"2020年人口："</span>,</span>
+<span id="cb29-19"><a href="#cb29-19" aria-hidden="true" tabindex="-1"></a>        <span class="fu">format</span>(profile_row<span class="sc">$</span>population_2020, <span class="at">big.mark =</span> <span class="st">","</span>),</span>
+<span id="cb29-20"><a href="#cb29-20" aria-hidden="true" tabindex="-1"></a>        <span class="st">"人"</span></span>
+<span id="cb29-21"><a href="#cb29-21" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb29-22"><a href="#cb29-22" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb29-23"><a href="#cb29-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">p</span>(</span>
+<span id="cb29-24"><a href="#cb29-24" aria-hidden="true" tabindex="-1"></a>      <span class="fu">paste0</span>(</span>
+<span id="cb29-25"><a href="#cb29-25" aria-hidden="true" tabindex="-1"></a>        <span class="st">"2021年農林業シェア："</span>,</span>
+<span id="cb29-26"><a href="#cb29-26" aria-hidden="true" tabindex="-1"></a>        <span class="fu">label_percent</span>(<span class="at">accuracy =</span> <span class="fl">0.1</span>)(agri_row<span class="sc">$</span>agri_forestry_share)</span>
+<span id="cb29-27"><a href="#cb29-27" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb29-28"><a href="#cb29-28" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb29-29"><a href="#cb29-29" aria-hidden="true" tabindex="-1"></a>    <span class="fu">p</span>(</span>
+<span id="cb29-30"><a href="#cb29-30" aria-hidden="true" tabindex="-1"></a>      <span class="fu">paste0</span>(</span>
+<span id="cb29-31"><a href="#cb29-31" aria-hidden="true" tabindex="-1"></a>        <span class="st">"2024年度の乗降客数が収録されている駅："</span>,</span>
+<span id="cb29-32"><a href="#cb29-32" aria-hidden="true" tabindex="-1"></a>        <span class="fu">format</span>(station_total, <span class="at">big.mark =</span> <span class="st">","</span>)</span>
+<span id="cb29-33"><a href="#cb29-33" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb29-34"><a href="#cb29-34" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb29-35"><a href="#cb29-35" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb29-36"><a href="#cb29-36" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>完成例では、人口ファイルがない場合もエラーにならず、「API取得結果なし」と表示する分岐を入れています。</p>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>時点の違いを隠さない
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>人口は2020年、GDP・農林業は2020年または2021年、駅は2024年度です。UI上で年を明記し、同一年の横断比較や因果分析であるかのように見せないでください。</p>
+</div>
+</div>
+</section>
+<section id="完成アプリのコードを読む" class="level1" data-number="13">
+<h1 data-number="13"><span class="header-section-number">13</span> 完成アプリのコードを読む</h1>
+<p>完成版は次にあります。</p>
+<pre class="text"><code>apps/kanto_dashboard/app.R</code></pre>
+<p>最初から全文を写すのではなく、次の順序でレビューします。</p>
+<ol type="1">
+<li>パッケージとデータ読込</li>
+<li>UIの入力・出力ID</li>
+<li><code>reactive()</code>の依存関係</li>
+<li><code>render*()</code>と対応する<code>*Output()</code></li>
+<li><code>observe()</code>と<code>observeEvent()</code>の副作用</li>
+<li>欠損・空データ・最初の年の処理</li>
+<li>出所と基準年の表示</li>
+</ol>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">file.show</span>(<span class="fu">file.path</span>(<span class="st">"apps"</span>, <span class="st">"kanto_dashboard"</span>, <span class="st">"app.R"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="デバッグ方法" class="level1" data-number="14">
+<h1 data-number="14"><span class="header-section-number">14</span> デバッグ方法</h1>
+<section id="idの対応を確認する" class="level2" data-number="14.1">
+<h2 data-number="14.1" class="anchored" data-anchor-id="idの対応を確認する"><span class="header-section-number">14.1</span> IDの対応を確認する</h2>
+<p>次が一致している必要があります。</p>
+<pre class="text"><code>leafletOutput("map")       &lt;-&gt; output$map
+plotOutput("trend_plot")  &lt;-&gt; output$trend_plot
+selectInput("year", ...)  &lt;-&gt; input$year</code></pre>
+</section>
+<section id="reqとvalidateを使う" class="level2" data-number="14.2">
+<h2 data-number="14.2" class="anchored" data-anchor-id="reqとvalidateを使う"><span class="header-section-number">14.2</span> <code>req()</code>と<code>validate()</code>を使う</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>output<span class="sc">$</span>ranking_plot <span class="ot">&lt;-</span> <span class="fu">renderPlot</span>({</span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">req</span>(input<span class="sc">$</span>year, input<span class="sc">$</span>metric)</span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">validate</span>(</span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">need</span>(<span class="fu">nrow</span>(<span class="fu">ranking_data</span>()) <span class="sc">&gt;</span> <span class="dv">0</span>, <span class="st">"表示できるデータがありません。"</span>)</span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a>  <span class="co"># plot code</span></span>
+<span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><code>req()</code>は必要入力が揃うまで処理を止め、<code>validate()</code>は利用者向けメッセージを表示します。</p>
+</section>
+<section id="中間データをコンソールへ出す" class="level2" data-number="14.3">
+<h2 data-number="14.3" class="anchored" data-anchor-id="中間データをコンソールへ出す"><span class="header-section-number">14.3</span> 中間データをコンソールへ出す</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="fu">observeEvent</span>(input<span class="sc">$</span>metric, {</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">message</span>(</span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"metric="</span>, input<span class="sc">$</span>metric,</span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">", year="</span>, input<span class="sc">$</span>year,</span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">", rows="</span>, <span class="fu">nrow</span>(<span class="fu">map_data</span>())</span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>本番では過剰なログを減らしますが、開発中は入力と行数を確認します。</p>
+</section>
+<section id="リアクティブログを使う" class="level2" data-number="14.4">
+<h2 data-number="14.4" class="anchored" data-anchor-id="リアクティブログを使う"><span class="header-section-number">14.4</span> リアクティブログを使う</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">shiny.reactlog =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>shiny<span class="sc">::</span><span class="fu">runApp</span>(<span class="fu">file.path</span>(<span class="st">"apps"</span>, <span class="st">"kanto_dashboard"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>アプリ上で<code>Ctrl + F3</code>を押すと、リアクティブ依存関係を確認できます。環境によってショートカットが異なる場合は、Shinyのreactlogドキュメントを確認してください。</p>
+</section>
+</section>
+<section id="性能と再現性" class="level1" data-number="15">
+<h1 data-number="15"><span class="header-section-number">15</span> 性能と再現性</h1>
+<section id="本教材で行った軽量化" class="level2" data-number="15.1">
+<h2 data-number="15.1" class="anchored" data-anchor-id="本教材で行った軽量化"><span class="header-section-number">15.1</span> 本教材で行った軽量化</h2>
+<ul>
+<li>市区町村ポリゴンを都県へdissolve</li>
+<li>表示geometryを関東本土へcrop</li>
+<li>投影座標系で境界をsimplify</li>
+<li>駅lineを駅グループごとのpointへ集約</li>
+<li>Excelと空間データを事前結合</li>
+<li>RDSへ保存</li>
+<li>アプリ起動時に一度だけ読込</li>
+<li><code>leafletProxy()</code>で差分更新</li>
+</ul>
+</section>
+<section id="反応が遅いときの診断順" class="level2" data-number="15.2">
+<h2 data-number="15.2" class="anchored" data-anchor-id="反応が遅いときの診断順"><span class="header-section-number">15.2</span> 反応が遅いときの診断順</h2>
+<ol type="1">
+<li>入力変更時に何が再計算されているか。</li>
+<li><code>reactive()</code>の中でファイル読込・API取得をしていないか。</li>
+<li>ブラウザへ送るgeometryの頂点数が多すぎないか。</li>
+<li>数万点を一度に描いていないか。</li>
+<li>同じ<code>left_join()</code>や<code>arrange()</code>を複数出力で繰り返していないか。</li>
+<li>不要な列・geometryを保持していないか。</li>
+</ol>
+</section>
+<section id="データ更新の流れ" class="level2" data-number="15.3">
+<h2 data-number="15.3" class="anchored" data-anchor-id="データ更新の流れ"><span class="header-section-number">15.3</span> データ更新の流れ</h2>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb36"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>flowchart LR</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>  A[公表元から新データ取得] --&gt; B[data_rawへ保存]</span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>  B --&gt; C[build_kanto_dashboard_data]</span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>  C --&gt; D[検算]</span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>  D --&gt; E[kanto_dashboard_data.rds]</span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>  E --&gt; F[Shiny起動]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<p>アプリ内で原データを直接加工するのではなく、ビルド処理を再実行してRDSを差し替えます。</p>
+</section>
+</section>
+<section id="授業内演習" class="level1" data-number="16">
+<h1 data-number="16"><span class="header-section-number">16</span> 授業内演習</h1>
+<section id="exercise-8-1-スターターへ塗り分けを追加する" class="level2" data-number="16.1">
+<h2 data-number="16.1" class="anchored" data-anchor-id="exercise-8-1-スターターへ塗り分けを追加する"><span class="header-section-number">16.1</span> Exercise 8-1 スターターへ塗り分けを追加する</h2>
+<p><code>apps/kanto_dashboard_starter/app.R</code>へ次を追加します。</p>
+<ol type="1">
+<li>指標選択<code>metric</code></li>
+<li><code>map_data()</code>の<code>map_value</code></li>
+<li><code>colorNumeric()</code></li>
+<li>凡例</li>
+<li>選択都県の境界強調</li>
+</ol>
+<p>完成条件：年・指標・都県を変えたとき、地図が正しく更新される。</p>
+</section>
+<section id="exercise-8-2-kpiを3つ作る" class="level2" data-number="16.2">
+<h2 data-number="16.2" class="anchored" data-anchor-id="exercise-8-2-kpiを3つ作る"><span class="header-section-number">16.2</span> Exercise 8-2 KPIを3つ作る</h2>
+<p>次を表示します。</p>
+<ul>
+<li>選択値</li>
+<li>関東内順位</li>
+<li>前年比</li>
+</ul>
+<p>最初の年、欠損値、0除算の場合にアプリが停止しないようにします。</p>
+</section>
+<section id="exercise-8-3-駅レイヤーを追加する" class="level2" data-number="16.3">
+<h2 data-number="16.3" class="anchored" data-anchor-id="exercise-8-3-駅レイヤーを追加する"><span class="header-section-number">16.3</span> Exercise 8-3 駅レイヤーを追加する</h2>
+<ol type="1">
+<li>駅表示のON/OFF</li>
+<li>乗降客数しきい値</li>
+<li>マーカー半径</li>
+<li>駅名・路線・乗降客数のラベル</li>
+<li>選択都県の条件該当駅数</li>
+</ol>
+<p>しきい値を0、最大付近へ動かし、空データでも動くか確認します。</p>
+</section>
+<section id="exercise-8-4-地図クリックを同期する" class="level2" data-number="16.4">
+<h2 data-number="16.4" class="anchored" data-anchor-id="exercise-8-4-地図クリックを同期する"><span class="header-section-number">16.4</span> Exercise 8-4 地図クリックを同期する</h2>
+<p>地図上で都県をクリックしたとき、次が同時に更新されるようにします。</p>
+<ul>
+<li>都県プルダウン</li>
+<li>KPI</li>
+<li>時系列</li>
+<li>ランキングの強調</li>
+<li>背景属性</li>
+</ul>
+</section>
+<section id="exercise-8-5-基準年の違いをuiへ組み込む" class="level2" data-number="16.5">
+<h2 data-number="16.5" class="anchored" data-anchor-id="exercise-8-5-基準年の違いをuiへ組み込む"><span class="header-section-number">16.5</span> Exercise 8-5 基準年の違いをUIへ組み込む</h2>
+<p>利用者が誤解しないよう、次を画面へ明記します。</p>
+<ul>
+<li>経済データ：2011～2021年</li>
+<li>人口：2020年</li>
+<li>駅別乗降客数：2024年度</li>
+<li>行政区域：2026年1月1日</li>
+</ul>
+<p>「出所と注意」のカードを作り、単なる脚注ではなく常時確認できるようにします。</p>
+</section>
+</section>
+<section id="発展演習" class="level1" data-number="17">
+<h1 data-number="17"><span class="header-section-number">17</span> 発展演習</h1>
+<section id="ダウンロード機能" class="level2" data-number="17.1">
+<h2 data-number="17.1" class="anchored" data-anchor-id="ダウンロード機能"><span class="header-section-number">17.1</span> ダウンロード機能</h2>
+<p>選択年・指標のランキング表をCSVとして保存できるようにします。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">downloadButton</span>(<span class="st">"download_ranking"</span>, <span class="st">"ランキングをCSVで保存"</span>)</span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>output<span class="sc">$</span>download_ranking <span class="ot">&lt;-</span> <span class="fu">downloadHandler</span>(</span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">filename =</span> <span class="cf">function</span>() {</span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">paste0</span>(</span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a>      <span class="st">"kanto_ranking_"</span>,</span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a>      input<span class="sc">$</span>metric,</span>
+<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a>      <span class="st">"_"</span>,</span>
+<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a>      input<span class="sc">$</span>year,</span>
+<span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a>      <span class="st">".csv"</span></span>
+<span id="cb37-11"><a href="#cb37-11" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb37-12"><a href="#cb37-12" aria-hidden="true" tabindex="-1"></a>  },</span>
+<span id="cb37-13"><a href="#cb37-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">content =</span> <span class="cf">function</span>(file) {</span>
+<span id="cb37-14"><a href="#cb37-14" aria-hidden="true" tabindex="-1"></a>    readr<span class="sc">::</span><span class="fu">write_csv</span>(</span>
+<span id="cb37-15"><a href="#cb37-15" aria-hidden="true" tabindex="-1"></a>      <span class="fu">ranking_data</span>() <span class="sc">|&gt;</span></span>
+<span id="cb37-16"><a href="#cb37-16" aria-hidden="true" tabindex="-1"></a>        <span class="fu">st_drop_geometry</span>(),</span>
+<span id="cb37-17"><a href="#cb37-17" aria-hidden="true" tabindex="-1"></a>      file</span>
+<span id="cb37-18"><a href="#cb37-18" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb37-19"><a href="#cb37-19" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb37-20"><a href="#cb37-20" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="urlまたはブックマークで状態を共有する" class="level2" data-number="17.2">
+<h2 data-number="17.2" class="anchored" data-anchor-id="urlまたはブックマークで状態を共有する"><span class="header-section-number">17.2</span> URLまたはブックマークで状態を共有する</h2>
+<p>利用者が同じ年・指標・都県を再現できるよう、Shinyのbookmarkingを調べます。共有URLへ個人情報やAPIキーを含めないでください。</p>
+</section>
+<section id="モジュールへ分割する" class="level2" data-number="17.3">
+<h2 data-number="17.3" class="anchored" data-anchor-id="モジュールへ分割する"><span class="header-section-number">17.3</span> モジュールへ分割する</h2>
+<p>アプリが大きくなったら、次へ分けます。</p>
+<pre class="text"><code>R/
+  mod_map.R
+  mod_kpi.R
+  mod_ranking.R
+  mod_profile.R</code></pre>
+<p>入力・出力IDの名前空間を使い、テスト可能な小単位へ分割します。</p>
+</section>
+<section id="別データを追加する" class="level2" data-number="17.4">
+<h2 data-number="17.4" class="anchored" data-anchor-id="別データを追加する"><span class="header-section-number">17.4</span> 別データを追加する</h2>
+<p>次のいずれかを地図へ追加します。</p>
+<ul>
+<li>第7章で取得した地価公示</li>
+<li>e-Statの人口・世帯</li>
+<li>医療機関または学校</li>
+<li>災害リスク区域</li>
+<li>第6章の農林業シェアを塗り分け指標へ追加</li>
+</ul>
+<p>単にレイヤーを増やすのではなく、利用者の問いと凡例の読みやすさを説明します。</p>
+</section>
+<section id="世界版weoダッシュボード" class="level2" data-number="17.5">
+<h2 data-number="17.5" class="anchored" data-anchor-id="世界版weoダッシュボード"><span class="header-section-number">17.5</span> 世界版WEOダッシュボード</h2>
+<p>第6章Bの<code>weo_panel</code>と世界の国境データをISO3コードで結合し、次を作ります。</p>
+<ul>
+<li>2023年・2030年のPPP GDP地図</li>
+<li>国をクリックした時系列</li>
+<li>G7・EU・ASEANフィルター</li>
+<li>実績・予測境界の表示</li>
+</ul>
+<p>2030年は予測であることを、地図タイトルと注記へ明示します。</p>
+</section>
+</section>
+<section id="aiを使ったshiny開発のルール" class="level1" data-number="18">
+<h1 data-number="18"><span class="header-section-number">18</span> AIを使ったShiny開発のルール</h1>
+<p>AIはUI部品やリアクティブコードの雛形作成に有効です。ただし、次を自分で確認します。</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>確認項目</th>
+<th>質問</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>入力</td>
+<td><code>input</code>のIDはUIと一致しているか</td>
+</tr>
+<tr class="even">
+<td>出力</td>
+<td><code>output</code>と<code>*Output()</code>は対応しているか</td>
+</tr>
+<tr class="odd">
+<td>依存</td>
+<td>どの入力変更でどの処理が再実行されるか</td>
+</tr>
+<tr class="even">
+<td>データ</td>
+<td>行数、キー、単位、基準年は正しいか</td>
+</tr>
+<tr class="odd">
+<td>欠損</td>
+<td><code>NA</code>を0へ変えていないか</td>
+</tr>
+<tr class="even">
+<td>地理</td>
+<td>CRS、空間述語、境界上の点は妥当か</td>
+</tr>
+<tr class="odd">
+<td>性能</td>
+<td>重い処理を<code>server</code>内で繰り返していないか</td>
+</tr>
+<tr class="even">
+<td>責任</td>
+<td>誤解を招く表示・因果表現になっていないか</td>
+</tr>
+</tbody>
+</table>
+<p>AIへ質問する場合は、最低限次を渡します。</p>
+<pre class="text"><code>- app directory structure
+- object names and column names
+- one row's observational unit
+- desired input/output IDs
+- which calculations should be reactive
+- expected behavior for missing data
+- data years and units</code></pre>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>「動いた」は検算ではない
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>年を2011年と2021年へ変える、都県を全て選ぶ、駅しきい値を0と最大へ動かす、駅表示をOFFにする、人口ファイルを一時的に外す、といった境界条件を試します。</p>
+</div>
+</div>
+</section>
+<section id="最終課題" class="level1" data-number="19">
+<h1 data-number="19"><span class="header-section-number">19</span> 最終課題</h1>
+<p>完成例をそのまま提出するのではなく、<strong>意思決定上の問いを一つ追加</strong>します。</p>
+<p>例：</p>
+<ul>
+<li>経済規模の割に大規模駅が多い都県はどこか。</li>
+<li>雇用者報酬比率と駅密度はどのように並ぶか。</li>
+<li>人口規模を考慮すると、GDP順位はどう変わるか。</li>
+<li>地価・医療・災害リスクを加えると、地域評価はどう変わるか。</li>
+</ul>
+<section id="提出物" class="level2" data-number="19.1">
+<h2 data-number="19.1" class="anchored" data-anchor-id="提出物"><span class="header-section-number">19.1</span> 提出物</h2>
+<ol type="1">
+<li>アプリフォルダ一式</li>
+<li>追加した問いと対象利用者の説明</li>
+<li>データフロー図</li>
+<li>入力と出力の一覧</li>
+<li>検算記録</li>
+<li>データ出所・基準年・加工内容</li>
+<li>画面キャプチャ</li>
+<li>300～500字の解釈と限界</li>
+</ol>
+</section>
+<section id="評価基準" class="level2" data-number="19.2">
+<h2 data-number="19.2" class="anchored" data-anchor-id="評価基準"><span class="header-section-number">19.2</span> 評価基準</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>観点</th>
+<th style="text-align: right;">配点の目安</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>問いとUIの整合性</td>
+<td style="text-align: right;">15</td>
+</tr>
+<tr class="even">
+<td>リアクティブ設計</td>
+<td style="text-align: right;">20</td>
+</tr>
+<tr class="odd">
+<td>地図・表・グラフの連動</td>
+<td style="text-align: right;">20</td>
+</tr>
+<tr class="even">
+<td>データ定義・基準年・欠損の扱い</td>
+<td style="text-align: right;">20</td>
+</tr>
+<tr class="odd">
+<td>性能と再現性</td>
+<td style="text-align: right;">15</td>
+</tr>
+<tr class="even">
+<td>解釈・限界・出所</td>
+<td style="text-align: right;">10</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="完成例の起動と比較" class="level1" data-number="20">
+<h1 data-number="20"><span class="header-section-number">20</span> 完成例の起動と比較</h1>
+<p>自分の実装を終えた後で、完成例と比較します。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>shiny<span class="sc">::</span><span class="fu">runApp</span>(<span class="fu">file.path</span>(<span class="st">"apps"</span>, <span class="st">"kanto_dashboard"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>比較する際は、見た目だけでなく次を確認します。</p>
+<ul>
+<li>RDSをどこで読むか。</li>
+<li><code>map_data()</code>を何が無効化するか。</li>
+<li>地図本体とレイヤー更新を分けているか。</li>
+<li>選択状態が複数部品で一致しているか。</li>
+<li>値の書式が指標ごとに変わるか。</li>
+<li>データがない場合にどう表示するか。</li>
+<li>出所と基準年が画面上に残るか。</li>
+</ul>
+</section>
+<section id="章末チェック" class="level1" data-number="21">
+<h1 data-number="21"><span class="header-section-number">21</span> 章末チェック</h1>
+<ul class="task-list">
+<li><label><input type="checkbox"><code>ui</code>、<code>server</code>、<code>shinyApp()</code>の役割を説明できる。</label></li>
+<li><label><input type="checkbox">不変データを<code>server</code>の外で一度だけ読んだ。</label></li>
+<li><label><input type="checkbox">共通加工を<code>reactive()</code>へまとめた。</label></li>
+<li><label><input type="checkbox"><code>renderLeaflet()</code>と<code>leafletProxy()</code>を使い分けた。</label></li>
+<li><label><input type="checkbox">年をまたぐ色尺度を固定するか、意図を説明できる。</label></li>
+<li><label><input type="checkbox">地図クリックと都県選択を同期した。</label></li>
+<li><label><input type="checkbox">KPI、時系列、ランキング、表が同じ選択状態を使う。</label></li>
+<li><label><input type="checkbox">最初の年、欠損、空の駅レイヤーで停止しない。</label></li>
+<li><label><input type="checkbox">2020年人口、2021年経済・農林業、2024年駅、2026年境界を区別した。</label></li>
+<li><label><input type="checkbox">APIキーや個人情報をアプリへ埋め込んでいない。</label></li>
+<li><label><input type="checkbox">データ更新をビルド処理とRDS再生成へ分離した。</label></li>
+<li><label><input type="checkbox">出所・加工内容・解釈上の限界を画面へ表示した。</label></li>
+<li><label><input type="checkbox">AIが生成したコードのリアクティブ依存関係を自分で説明できる。</label></li>
+</ul>
+</section>
+<section id="参考資料" class="level1" data-number="22">
+<h1 data-number="22"><span class="header-section-number">22</span> 参考資料</h1>
+<ul>
+<li>Shiny公式：<a href="https://shiny.posit.co/r/getstarted/shiny-basics/lesson1/" class="uri">https://shiny.posit.co/r/getstarted/shiny-basics/lesson1/</a></li>
+<li>Shinyのリアクティブ処理：<a href="https://shiny.posit.co/r/getstarted/build-an-app/reactive-flow/" class="uri">https://shiny.posit.co/r/getstarted/build-an-app/reactive-flow/</a></li>
+<li>LeafletとShiny：<a href="https://rstudio.github.io/leaflet/articles/shiny.html" class="uri">https://rstudio.github.io/leaflet/articles/shiny.html</a></li>
+<li>bslib dashboards：<a href="https://rstudio.github.io/bslib/articles/dashboards/index.html" class="uri">https://rstudio.github.io/bslib/articles/dashboards/index.html</a></li>
+<li>sf：<a href="https://r-spatial.github.io/sf/" class="uri">https://r-spatial.github.io/sf/</a></li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
